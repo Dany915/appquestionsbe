@@ -1,33 +1,20 @@
-const { response } = require('express');
-const mongoose    = require('mongoose');
-const Question    = require('../models/question');
+const mongoose = require('mongoose');
+const Question  = require('../models/question');
+const Topic     = require('../models/topic');
 
-// ─── Constantes ────────────────────────────────────────────────────────────────
-
-// Límite de seguridad para la carga masiva (evita peticiones que saturen el servidor)
 const MAX_BULK = 200;
 
-// Valores permitidos para el campo "tipo" (niveles cognitivos de Bloom)
-const TIPOS_VALIDOS = ['recall', 'comprension', 'aplicacion', 'analisis', 'evaluacion'];
+const TIPOS_VALIDOS = ['literal', 'comprension', 'aplicacion', 'analisis', 'sintesis', 'mejor_respuesta'];
 
 // ─── Helper de validación ──────────────────────────────────────────────────────
 
-/**
- * Valida y sanitiza todos los campos de una pregunta.
- * Se usa tanto al crear como al actualizar para no repetir la lógica.
- *
- * @param {object} body - Campos a validar (pueden ser parciales en updates si se pre-mezclan con los valores actuales)
- * @returns {{ ok: true, data: object } | { ok: false, msg: string }}
- */
 const validarPregunta = (body) => {
-    const { text, options, correctIndex, tags, difficulty, tipo, feedback, active } = body;
+    const { text, options, correctIndex, topicTag, difficulty, tipo, feedback, active } = body;
 
-    // text: obligatorio, string no vacío
     if (typeof text !== 'string' || text.trim().length === 0) {
         return { ok: false, msg: 'El campo "text" es requerido y debe ser un texto no vacío.' };
     }
 
-    // options: arreglo con al menos 2 strings no vacíos
     if (!Array.isArray(options)) {
         return { ok: false, msg: 'El campo "options" debe ser un arreglo.' };
     }
@@ -39,7 +26,6 @@ const validarPregunta = (body) => {
         return { ok: false, msg: 'El campo "options" debe tener al menos 2 opciones válidas.' };
     }
 
-    // correctIndex: entero dentro del rango de options
     if (!Number.isInteger(correctIndex)) {
         return { ok: false, msg: 'El campo "correctIndex" debe ser un número entero.' };
     }
@@ -47,31 +33,27 @@ const validarPregunta = (body) => {
         return { ok: false, msg: `El campo "correctIndex" debe estar entre 0 y ${cleanOptions.length - 1}.` };
     }
 
-    // difficulty: 1 (fácil) | 2 (medio) | 3 (difícil) — default 1
-    const safeDifficulty = difficulty ?? 1;
-    if (!Number.isInteger(safeDifficulty) || safeDifficulty < 1 || safeDifficulty > 3) {
-        return { ok: false, msg: 'El campo "difficulty" debe ser 1 (fácil), 2 (medio) o 3 (difícil).' };
+    // topicTag: ObjectId del tema al que pertenece la pregunta
+    if (!topicTag || !mongoose.Types.ObjectId.isValid(topicTag)) {
+        return { ok: false, msg: 'El campo "topicTag" es requerido y debe ser un ID de tema válido.' };
     }
 
-    // tipo: nivel cognitivo — default 'recall'
-    const safeTipo = tipo ?? 'recall';
+    const safeDifficulty = difficulty ?? 1;
+    if (!Number.isInteger(safeDifficulty) || safeDifficulty < 1 || safeDifficulty > 4) {
+        return { ok: false, msg: 'El campo "difficulty" debe ser 1 (fácil), 2 (medio), 3 (difícil) o 4 (avanzado).' };
+    }
+
+    const safeTipo = tipo ?? 'literal';
     if (!TIPOS_VALIDOS.includes(safeTipo)) {
         return { ok: false, msg: `El campo "tipo" debe ser uno de: ${TIPOS_VALIDOS.join(', ')}.` };
     }
 
-    // active: booleano — default true
     const safeActive = active ?? true;
     if (typeof safeActive !== 'boolean') {
         return { ok: false, msg: 'El campo "active" debe ser true o false.' };
     }
 
-    // feedback: texto libre opcional — default ''
     const safeFeedback = typeof feedback === 'string' ? feedback.trim() : '';
-
-    // tags: arreglo de strings opcional — default []
-    const safeTags = Array.isArray(tags)
-        ? tags.filter(t => typeof t === 'string').map(t => t.trim()).filter(t => t.length > 0)
-        : [];
 
     return {
         ok: true,
@@ -79,11 +61,11 @@ const validarPregunta = (body) => {
             text: text.trim(),
             options: cleanOptions,
             correctIndex,
+            topicTag,
             difficulty: safeDifficulty,
             tipo: safeTipo,
             active: safeActive,
             feedback: safeFeedback,
-            tags: safeTags,
         },
     };
 };
@@ -92,13 +74,19 @@ const validarPregunta = (body) => {
 
 /**
  * POST /api/question
- * Crea una sola pregunta.
- * Body: { text, options[], correctIndex, tags[], difficulty, tipo, feedback, active }
+ * Body: { text, options[], correctIndex, topicTag, difficulty?, tipo?, feedback?, active? }
+ * topicTag → _id del documento Topic al que pertenece la pregunta
  */
-const crearPregunta = async (req, res = response) => {
+const crearPregunta = async (req, res) => {
     const validacion = validarPregunta(req.body);
     if (!validacion.ok) {
         return res.status(400).json({ ok: false, msg: validacion.msg });
+    }
+
+    // Verificar que el tema existe
+    const temaExiste = await Topic.exists({ _id: validacion.data.topicTag });
+    if (!temaExiste) {
+        return res.status(404).json({ ok: false, msg: 'El tema indicado en "topicTag" no existe.' });
     }
 
     try {
@@ -118,18 +106,14 @@ const crearPregunta = async (req, res = response) => {
 
 /**
  * POST /api/question/bulk
- * Crea múltiples preguntas en una sola petición.
- * Inserta las válidas y reporta cuáles fallaron sin cancelar toda la operación.
- * Body: { questions: [ { text, options[], correctIndex, ... }, ... ] }
+ * Crea hasta 200 preguntas en una sola petición.
+ * Body: { questions: [ { text, options[], correctIndex, topicTag, ... }, ... ] }
  */
-const crearPreguntasMasivo = async (req, res = response) => {
+const crearPreguntasMasivo = async (req, res) => {
     const { questions } = req.body;
 
     if (!Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({
-            ok: false,
-            msg: 'El body debe incluir "questions" como un arreglo no vacío.',
-        });
+        return res.status(400).json({ ok: false, msg: 'El body debe incluir "questions" como un arreglo no vacío.' });
     }
 
     if (questions.length > MAX_BULK) {
@@ -139,7 +123,6 @@ const crearPreguntasMasivo = async (req, res = response) => {
         });
     }
 
-    // Validar cada pregunta por separado
     const validDocs = [];
     const errors    = [];
 
@@ -163,7 +146,6 @@ const crearPreguntasMasivo = async (req, res = response) => {
     }
 
     try {
-        // ordered: false → intenta insertar todas las válidas aunque alguna falle en BD
         const inserted = await Question.insertMany(validDocs, { ordered: false });
 
         return res.status(201).json({
@@ -181,12 +163,9 @@ const crearPreguntasMasivo = async (req, res = response) => {
 
 /**
  * PUT /api/question/:id
- * Actualiza una pregunta existente (parcial o total).
- * Solo se reemplazan los campos que vengan en el body; los demás conservan su valor.
- * Se valida el estado final completo para garantizar consistencia
- * (ej: si cambian options, el correctIndex actual debe seguir siendo válido).
+ * Actualiza una pregunta. Solo reemplaza los campos enviados; los demás se conservan.
  */
-const actualizarPregunta = async (req, res = response) => {
+const actualizarPregunta = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -201,22 +180,28 @@ const actualizarPregunta = async (req, res = response) => {
 
         const body = req.body || {};
 
-        // Mezclar: si el campo viene en el body se usa el nuevo valor, sino se conserva el actual
         const estadoFinal = {
             text:         body.text         ?? pregunta.text,
             options:      body.options      ?? pregunta.options,
             correctIndex: body.correctIndex ?? pregunta.correctIndex,
-            tags:         body.tags         ?? pregunta.tags,
+            topicTag:     body.topicTag     ?? String(pregunta.topicTag),
             difficulty:   body.difficulty   ?? pregunta.difficulty,
             tipo:         body.tipo         ?? pregunta.tipo,
             feedback:     body.feedback     ?? pregunta.feedback,
             active:       body.active       ?? pregunta.active,
         };
 
-        // Validar el estado final completo antes de guardar
         const validacion = validarPregunta(estadoFinal);
         if (!validacion.ok) {
             return res.status(400).json({ ok: false, msg: validacion.msg });
+        }
+
+        // Si el topicTag cambió, verificar que el nuevo tema existe
+        if (body.topicTag && body.topicTag !== String(pregunta.topicTag)) {
+            const temaExiste = await Topic.exists({ _id: body.topicTag });
+            if (!temaExiste) {
+                return res.status(404).json({ ok: false, msg: 'El tema indicado en "topicTag" no existe.' });
+            }
         }
 
         pregunta.set(validacion.data);
@@ -235,10 +220,10 @@ const actualizarPregunta = async (req, res = response) => {
 
 /**
  * PATCH /api/question/:id/estado
- * Activa o desactiva una pregunta sin modificar ningún otro campo.
+ * Solo activa o desactiva una pregunta.
  * Body: { active: true | false }
  */
-const cambiarEstado = async (req, res = response) => {
+const cambiarEstado = async (req, res) => {
     const { id }     = req.params;
     const { active } = req.body;
 
@@ -272,38 +257,34 @@ const cambiarEstado = async (req, res = response) => {
  * GET /api/question
  * Lista preguntas con filtros opcionales.
  * Query params:
- *   tags        → "tag1,tag2"   filtra por tags (OR: devuelve si tiene al menos uno)
- *   difficulty  → 1 | 2 | 3    filtra por nivel de dificultad
- *   tipo        → "recall" etc  filtra por tipo cognitivo
- *   active      → true | false  filtra por estado (default: true — solo activas)
+ *   topicTag   → _id del tema (ObjectId) para filtrar por tema
+ *   difficulty → 1 | 2 | 3 | 4
+ *   tipo       → uno de los tipos cognitivos
+ *   active     → "true" | "false" (default: true)
  */
-const obtenerPreguntas = async (req, res = response) => {
+const obtenerPreguntas = async (req, res) => {
     try {
-        const { tags, difficulty, tipo, active } = req.query;
+        const { topicTag, difficulty, tipo, active } = req.query;
 
         const filtro = {};
 
-        // Por defecto solo se muestran preguntas activas
         filtro.active = active === 'false' ? false : true;
 
-        // Filtro por tags (OR)
-        if (tags) {
-            const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-            if (tagsArray.length > 0) {
-                filtro.tags = { $in: tagsArray };
+        if (topicTag) {
+            if (!mongoose.Types.ObjectId.isValid(topicTag)) {
+                return res.status(400).json({ ok: false, msg: 'El parámetro "topicTag" debe ser un ID de tema válido.' });
             }
+            filtro.topicTag = topicTag;
         }
 
-        // Filtro por dificultad
         if (difficulty !== undefined) {
             const diff = parseInt(difficulty, 10);
-            if (!Number.isInteger(diff) || diff < 1 || diff > 3) {
-                return res.status(400).json({ ok: false, msg: 'El parámetro "difficulty" debe ser 1, 2 o 3.' });
+            if (!Number.isInteger(diff) || diff < 1 || diff > 4) {
+                return res.status(400).json({ ok: false, msg: 'El parámetro "difficulty" debe ser 1, 2, 3 o 4.' });
             }
             filtro.difficulty = diff;
         }
 
-        // Filtro por tipo cognitivo
         if (tipo !== undefined) {
             if (!TIPOS_VALIDOS.includes(tipo)) {
                 return res.status(400).json({ ok: false, msg: `El parámetro "tipo" debe ser uno de: ${TIPOS_VALIDOS.join(', ')}.` });
@@ -311,7 +292,9 @@ const obtenerPreguntas = async (req, res = response) => {
             filtro.tipo = tipo;
         }
 
-        const preguntas = await Question.find(filtro).sort({ createdAt: -1 });
+        const preguntas = await Question.find(filtro)
+            .populate('topicTag', 'topicTag label moduleTag')
+            .sort({ createdAt: -1 });
 
         return res.status(200).json({
             ok: true,

@@ -8,10 +8,12 @@ class Server {
         this.app  = express();
         this.port = process.env.PORT;
         this.paths = {
-            auth:     '/api/auth',
-            question: '/api/question',
-            quiz:     '/api/quiz',
-            topic:    '/api/topic',
+            auth:      '/api/auth',
+            question:  '/api/question',
+            quiz:      '/api/quiz',
+            topic:     '/api/topic',
+            stats:     '/api/stats',
+            userStats: '/api/user-stats',
         };
 
         this.conectarBD();
@@ -33,6 +35,8 @@ class Server {
         this.app.use(this.paths.question, require('./routes/question'));
         this.app.use(this.paths.quiz,     require('./routes/quiz'));
         this.app.use(this.paths.topic,    require('./routes/topic'));
+        this.app.use(this.paths.stats,     require('./routes/stats'));
+        this.app.use(this.paths.userStats, require('./routes/userStats'));
     }
 
     listen() {

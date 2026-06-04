@@ -12,10 +12,26 @@ const router = Router();
  * GET /api/quiz
  * Genera un quiz con preguntas aleatorias.
  * Requiere: autenticación (validarJWT)
- * Enviar uno de los dos: ?topicTag=... o ?moduleTag=...
+ *
+ * Enviar uno de los dos:
+ *   ?topicTags=mod_1_ley_1105,mod_1_ley_1106   → uno o varios temas separados por coma
+ *   ?moduleTag=modulo_1                         → todos los temas del módulo
  */
 router.get('/', [
     validarJWT,
+
+    query('topicTags')
+        .optional()
+        .notEmpty().withMessage('El parámetro "topicTags" no puede estar vacío.'),
+
+    query('moduleTag')
+        .optional()
+        .notEmpty().withMessage('El parámetro "moduleTag" no puede estar vacío.'),
+
+    query('nivel')
+        .optional()
+        .isIn(['curioso', 'analitico', 'estratega', 'genio'])
+        .withMessage('El parámetro "nivel" debe ser: curioso, analitico, estratega o genio.'),
 
     query('count')
         .optional()
@@ -44,6 +60,15 @@ router.post('/calificar', [
     body('answers.*.selectedIndex')
         .notEmpty().withMessage('Cada respuesta debe incluir un "selectedIndex".')
         .isInt({ min: 0 }).withMessage('El "selectedIndex" debe ser un número entero mayor o igual a 0.'),
+
+    body('nivel')
+        .optional()
+        .isIn(['curioso', 'analitico', 'estratega', 'genio'])
+        .withMessage('El campo "nivel" debe ser: curioso, analitico, estratega o genio.'),
+
+    body('timeTakenSecs')
+        .optional()
+        .isInt({ min: 0 }).withMessage('El campo "timeTakenSecs" debe ser un número entero mayor o igual a 0.'),
 
     body('topicTags')
         .optional()

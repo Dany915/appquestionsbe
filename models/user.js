@@ -46,6 +46,25 @@ const UserSchema = new Schema(
             type: Boolean,
             default: true,
         },
+
+        // Racha actual de días consecutivos con al menos un intento
+        currentStreak: {
+            type: Number,
+            default: 0,
+        },
+
+        // Mejor racha histórica
+        maxStreak: {
+            type: Number,
+            default: 0,
+            index: true,
+        },
+
+        // Fecha del último intento (UTC) — usada para calcular la racha
+        lastAttemptDate: {
+            type: Date,
+            default: null,
+        },
     },
     { timestamps: true }
 );

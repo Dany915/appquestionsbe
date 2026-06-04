@@ -11,18 +11,23 @@ const {
 
 const router = Router();
 
-const TIPOS_VALIDOS = ['recall', 'comprension', 'aplicacion', 'analisis', 'evaluacion'];
+const TIPOS_VALIDOS = ['literal', 'comprension', 'aplicacion', 'analisis', 'sintesis', 'mejor_respuesta'];
 
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * GET /api/question
  * Lista preguntas con filtros opcionales.
+ * topicTag → _id del tema (ObjectId) para filtrar por tema
  */
 router.get('/', [
+    query('topicTag')
+        .optional()
+        .isMongoId().withMessage('El parámetro "topicTag" debe ser un ID de tema válido.'),
+
     query('difficulty')
         .optional()
-        .isInt({ min: 1, max: 3 }).withMessage('difficulty debe ser 1 (fácil), 2 (medio) o 3 (difícil).'),
+        .isInt({ min: 1, max: 4 }).withMessage('difficulty debe ser 1 (fácil), 2 (medio), 3 (difícil) o 4 (avanzado).'),
 
     query('tipo')
         .optional()
@@ -40,6 +45,7 @@ router.get('/', [
 /**
  * POST /api/question
  * Crea una sola pregunta.
+ * topicTag → _id del documento Topic al que pertenece la pregunta
  */
 router.post('/', [
     body('text')
@@ -56,9 +62,13 @@ router.post('/', [
         .notEmpty().withMessage('El campo "correctIndex" es requerido.')
         .isInt({ min: 0 }).withMessage('El campo "correctIndex" debe ser un número entero mayor o igual a 0.'),
 
+    body('topicTag')
+        .notEmpty().withMessage('El campo "topicTag" es requerido.')
+        .isMongoId().withMessage('El campo "topicTag" debe ser un ID de tema válido.'),
+
     body('difficulty')
         .optional()
-        .isInt({ min: 1, max: 3 }).withMessage('El campo "difficulty" debe ser 1 (fácil), 2 (medio) o 3 (difícil).'),
+        .isInt({ min: 1, max: 4 }).withMessage('El campo "difficulty" debe ser 1 (fácil), 2 (medio), 3 (difícil) o 4 (avanzado).'),
 
     body('tipo')
         .optional()
@@ -72,10 +82,6 @@ router.post('/', [
         .optional()
         .isString().withMessage('El campo "feedback" debe ser un texto.'),
 
-    body('tags')
-        .optional()
-        .isArray().withMessage('El campo "tags" debe ser un arreglo.'),
-
     validarCampos,
 ], crearPregunta);
 
@@ -84,8 +90,7 @@ router.post('/', [
 /**
  * POST /api/question/bulk
  * Crea múltiples preguntas en una sola petición.
- * Solo se valida que "questions" sea un arreglo no vacío.
- * La validación de cada pregunta individual la hace el controller.
+ * Cada pregunta del arreglo debe incluir "topicTag" (el _id del tema).
  */
 router.post('/bulk', [
     body('questions')
@@ -116,9 +121,13 @@ router.put('/:id', [
         .optional()
         .isInt({ min: 0 }).withMessage('El campo "correctIndex" debe ser un número entero mayor o igual a 0.'),
 
+    body('topicTag')
+        .optional()
+        .isMongoId().withMessage('El campo "topicTag" debe ser un ID de tema válido.'),
+
     body('difficulty')
         .optional()
-        .isInt({ min: 1, max: 3 }).withMessage('El campo "difficulty" debe ser 1 (fácil), 2 (medio) o 3 (difícil).'),
+        .isInt({ min: 1, max: 4 }).withMessage('El campo "difficulty" debe ser 1 (fácil), 2 (medio), 3 (difícil) o 4 (avanzado).'),
 
     body('tipo')
         .optional()
