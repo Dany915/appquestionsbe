@@ -1,6 +1,8 @@
 const { Router } = require('express');
 const { body, query, param } = require('express-validator');
-const { validarCampos } = require('../middlewares/validar-campos');
+const { validarCampos }  = require('../middlewares/validar-campos');
+const { validarJWT }     = require('../middlewares/validar-jwt');
+const { validarAdmin }   = require('../middlewares/validar-admin');
 const {
     crearPregunta,
     crearPreguntasMasivo,
@@ -13,6 +15,9 @@ const router = Router();
 
 const TIPOS_VALIDOS = ['literal', 'comprension', 'aplicacion', 'analisis', 'sintesis', 'mejor_respuesta'];
 
+// Todos los endpoints de question son exclusivos para administradores
+const soloAdmin = [validarJWT, validarAdmin];
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -20,7 +25,7 @@ const TIPOS_VALIDOS = ['literal', 'comprension', 'aplicacion', 'analisis', 'sint
  * Lista preguntas con filtros opcionales.
  * topicTag → _id del tema (ObjectId) para filtrar por tema
  */
-router.get('/', [
+router.get('/', [...soloAdmin,
     query('topicTag')
         .optional()
         .isMongoId().withMessage('El parámetro "topicTag" debe ser un ID de tema válido.'),
@@ -47,7 +52,7 @@ router.get('/', [
  * Crea una sola pregunta.
  * topicTag → _id del documento Topic al que pertenece la pregunta
  */
-router.post('/', [
+router.post('/', [...soloAdmin,
     body('text')
         .notEmpty().withMessage('El campo "text" es requerido.')
         .isString().withMessage('El campo "text" debe ser un texto.'),
@@ -92,7 +97,7 @@ router.post('/', [
  * Crea múltiples preguntas en una sola petición.
  * Cada pregunta del arreglo debe incluir "topicTag" (el _id del tema).
  */
-router.post('/bulk', [
+router.post('/bulk', [...soloAdmin,
     body('questions')
         .isArray({ min: 1 }).withMessage('El campo "questions" debe ser un arreglo con al menos 1 pregunta.'),
 
@@ -105,7 +110,7 @@ router.post('/bulk', [
  * PUT /api/question/:id
  * Actualiza una pregunta existente (parcial o total).
  */
-router.put('/:id', [
+router.put('/:id', [...soloAdmin,
     param('id')
         .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
 
@@ -146,7 +151,7 @@ router.put('/:id', [
  * PATCH /api/question/:id/estado
  * Activa o desactiva una pregunta.
  */
-router.patch('/:id/estado', [
+router.patch('/:id/estado', [...soloAdmin,
     param('id')
         .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
 

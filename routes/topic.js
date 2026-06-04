@@ -1,6 +1,8 @@
 const { Router } = require('express');
 const { body, query, param } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
+const { validarJWT }    = require('../middlewares/validar-jwt');
+const { validarAdmin }  = require('../middlewares/validar-admin');
 const {
     crearTema,
     obtenerTemasPorModulo,
@@ -10,6 +12,8 @@ const {
 } = require('../controllers/topic');
 
 const router = Router();
+
+const soloAdmin = [validarJWT, validarAdmin];
 
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -48,7 +52,7 @@ router.get('/', [
  * POST /api/topic
  * Crea un nuevo tema dentro de un módulo.
  */
-router.post('/', [
+router.post('/', [...soloAdmin,
     body('moduleTag')
         .notEmpty().withMessage('El campo "moduleTag" es requerido. Ej: "modulo_1".')
         .isString().withMessage('El campo "moduleTag" debe ser un texto.'),
@@ -79,7 +83,7 @@ router.post('/', [
  * Actualiza el label o moduleTagLabel de un tema.
  * El topicTag y moduleTag no se pueden cambiar.
  */
-router.put('/:id', [
+router.put('/:id', [...soloAdmin,
     param('id')
         .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
 
@@ -102,7 +106,7 @@ router.put('/:id', [
  * PATCH /api/topic/:id/estado
  * Activa o desactiva un tema.
  */
-router.patch('/:id/estado', [
+router.patch('/:id/estado', [...soloAdmin,
     param('id')
         .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
 
