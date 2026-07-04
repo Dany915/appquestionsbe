@@ -65,6 +65,33 @@ const UserSchema = new Schema(
             type: Date,
             default: null,
         },
+
+        // ─── Sistema de niveles ────────────────────────────────────────────
+        // XP total acumulada — el nivel siempre se deriva de este valor
+        xp: {
+            type: Number,
+            default: 0,
+        },
+
+        // Nivel actual (1-50), sincronizado con xp al otorgar XP.
+        // Se guarda para poder indexar leaderboards por nivel.
+        level: {
+            type: Number,
+            default: 1,
+            index: true,
+        },
+
+        // XP ganada en el día actual (UTC) — usada para el límite diario
+        xpToday: {
+            type: Number,
+            default: 0,
+        },
+
+        // Fecha de la última ganancia de XP (UTC) — resetea xpToday al cambiar de día
+        xpTodayDate: {
+            type: Date,
+            default: null,
+        },
     },
     { timestamps: true }
 );

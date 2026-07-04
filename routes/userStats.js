@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { query }  = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT }    = require('../middlewares/validar-jwt');
-const { dashboard, porTema, porNivel, evolucion } = require('../controllers/userStats');
+const { dashboard, porTema, porNivel, evolucion, nivelUsuario } = require('../controllers/userStats');
 
 const router = Router();
 
@@ -16,6 +16,14 @@ router.use(validarJWT);
  * Resumen general: totales, racha, nivel favorito.
  */
 router.get('/dashboard', dashboard);
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/user-stats/nivel
+ * Progreso de nivel: nivel, rango, XP y % de la barra de progreso.
+ */
+router.get('/nivel', nivelUsuario);
 
 // ──────────────────────────────────────────────────────────────────────────────
 

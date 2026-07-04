@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
+const { progresoNivel } = require('../helpers/leveling');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -27,7 +28,7 @@ const dashboard = async (req, res) => {
     try {
         const [user, resumen, nivelFavorito] = await Promise.all([
 
-            User.findById(userId, 'username avatar currentStreak maxStreak'),
+            User.findById(userId, 'username avatar currentStreak maxStreak xp'),
 
             Attempt.aggregate([
                 { $match: { userId } },
@@ -67,6 +68,7 @@ const dashboard = async (req, res) => {
                 currentStreak: user.currentStreak,
                 maxStreak:     user.maxStreak,
             },
+            progreso: progresoNivel(user.xp || 0),
             stats: {
                 totalIntentos:        s.totalIntentos  || 0,
                 totalPreguntas:       s.totalPreguntas || 0,
@@ -229,4 +231,27 @@ const evolucion = async (req, res) => {
     }
 };
 
-module.exports = { dashboard, porTema, porNivel, evolucion };
+/**
+ * GET /api/user-stats/nivel
+ * Progreso de nivel del usuario: nivel, rango, XP y barra de progreso.
+ * No expone el nivel máximo — en el tope, xpParaSubir llega como null.
+ */
+const nivelUsuario = async (req, res) => {
+    try {
+        const user = await User.findById(req.uid, 'xp');
+
+        if (!user) {
+            return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
+        }
+
+        return res.status(200).json({
+            ok:       true,
+            progreso: progresoNivel(user.xp || 0),
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al obtener el nivel del usuario.' });
+    }
+};
+
+module.exports = { dashboard, porTema, porNivel, evolucion, nivelUsuario };

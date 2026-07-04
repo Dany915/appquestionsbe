@@ -3,6 +3,7 @@ const Question  = require('../models/question');
 const Attempt   = require('../models/attempt');
 const Topic     = require('../models/topic');
 const User      = require('../models/user');
+const { calcularXpQuiz, otorgarXp } = require('../helpers/leveling');
 
 const MAX_PREGUNTAS = 50;
 
@@ -428,6 +429,40 @@ const calificarQuiz = async (req, res) => {
         // Actualizar racha del usuario (no bloqueante — fallo silencioso)
         actualizarRacha(userId).catch(err => console.error('Error actualizando racha:', err));
 
+        // Otorgar XP y calcular progreso de nivel.
+        // Si falla, el quiz igual se califica — xp y progreso llegan como null.
+        let xpInfo       = null;
+        let progresoInfo = null;
+
+        try {
+            const desglose  = calcularXpQuiz(respuestasBD, scorePercent, totalCalificadas);
+            const resultado = await otorgarXp(userId, desglose.total);
+
+            if (resultado) {
+                xpInfo = {
+                    ganada:   desglose.total,
+                    aplicada: resultado.xpAplicada,
+                    desglose: {
+                        respuestasCorrectas: desglose.respuestasCorrectas,
+                        quizCompletado:      desglose.quizCompletado,
+                        scoreAlto:           desglose.scoreAlto,
+                        perfecto:            desglose.perfecto,
+                    },
+                    limiteDiarioAlcanzado: resultado.limiteDiarioAlcanzado,
+                };
+
+                progresoInfo = {
+                    ...resultado.progreso,
+                    subioNivel:    resultado.subioNivel,
+                    nivelAnterior: resultado.nivelAntes,
+                    subioRango:    resultado.subioRango,
+                    rangoAnterior: resultado.rangoAntes,
+                };
+            }
+        } catch (err) {
+            console.error('Error otorgando XP:', err);
+        }
+
         return res.status(200).json({
             ok:                 true,
             nivel:              nivelValido,
@@ -438,6 +473,8 @@ const calificarQuiz = async (req, res) => {
             timeTakenSecs:      tiempoSecs,
             timeTakenFormatted: tiempoFormateado,
             difficultyAvg:      Number(difficultyAvg.toFixed(2)),
+            xp:                 xpInfo,
+            progreso:           progresoInfo,
             results:            resultados,
         });
 
