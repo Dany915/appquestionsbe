@@ -30,7 +30,7 @@ POST /api/auth/register
 {
   "ok": true,
   "token": "<jwt>",
-  "user": { "uid": "...", "username": "daniel", "email": "...", "role": "user", "avatar": "" }
+  "user": { "uid": "...", "username": "daniel", "email": "...", "role": "user", "plan": "free", "avatar": "" }
 }
 ```
 > El token tiene una duración de 2h. Guardarlo localmente para usarlo en el header de los endpoints protegidos.
@@ -150,15 +150,25 @@ GET /api/quiz
 
 **Query params opcionales:**
 - `?nivel=curioso` — nivel de dificultad (default: `curioso`)
-- `?count=10` — cantidad de preguntas, entre 1 y 50 (default: `10`)
+- `?count=10` — cantidad de preguntas (default: `10`). **Free: 1 a 20 · Pro: 1 a 50.**
+
+> Si un usuario free pide `count` mayor a 20, el backend responde **403** con `upgradeRequired: true` (igual que con el nivel Genio). En el selector de cantidad de Flutter, mostrar las opciones grandes (30, 40, 50) con candado 🔒 para usuarios free.
+> El mismo límite aplica al calificar: un free no puede enviar más de 20 respuestas en un `POST /api/quiz/calificar`.
 
 **Niveles disponibles y sus tipos cognitivos:**
-| Nivel | Tipos de preguntas |
-|---|---|
-| `curioso` | literal, comprensión |
-| `analitico` | aplicación |
-| `estratega` | análisis, mejor respuesta |
-| `genio` | síntesis, mejor respuesta |
+| Nivel | Tipos de preguntas | Plan |
+|---|---|---|
+| `curioso` | literal, comprensión | free y pro |
+| `analitico` | aplicación | free y pro |
+| `estratega` | análisis, mejor respuesta | free y pro |
+| `genio` | síntesis, mejor respuesta | **solo pro** 🔒 |
+
+> **Nivel Genio (solo pro):** si un usuario free pide `?nivel=genio`, el backend responde **403** con `upgradeRequired: true`:
+> ```json
+> { "ok": false, "upgradeRequired": true, "msg": "El nivel Genio es exclusivo del plan Pro. Mejora tu plan para desbloquearlo." }
+> ```
+> En Flutter: mostrar el nivel Genio **visible pero con candado** en el selector de dificultad — que se vea lo que se pierde vende más que ocultarlo. Al tocarlo, abrir la pantalla de upgrade.
+> El fallback también lo respeta: a un usuario free que pida `estratega` nunca le llegan preguntas de `genio` para completar el quiz.
 
 **Respuesta:**
 ```json
@@ -228,6 +238,33 @@ POST /api/quiz/calificar
   "timeTakenSecs": 180,
   "timeTakenFormatted": "3:00",
   "difficultyAvg": 1.4,
+  "xp": {
+    "ganada": 43,
+    "aplicada": 43,
+    "desglose": {
+      "respuestasCorrectas": 28,
+      "quizCompletado": 10,
+      "scoreAlto": 5,
+      "perfecto": 0
+    },
+    "multiplicadorScore": 1,
+    "limiteDiarioAlcanzado": false,
+    "limiteIntentosAlcanzado": false,
+    "intentosConXpRestantes": 3,
+    "plan": "free"
+  },
+  "progreso": {
+    "nivel": 7,
+    "rango": "Aprendiz",
+    "xpTotal": 560,
+    "xpEnNivel": 35,
+    "xpParaSubir": 175,
+    "progressPercent": 20,
+    "subioNivel": true,
+    "nivelAnterior": 6,
+    "subioRango": false,
+    "rangoAnterior": "Aprendiz"
+  },
   "results": [
     {
       "questionId": "664a1f...",
@@ -247,7 +284,17 @@ POST /api/quiz/calificar
   ]
 }
 ```
-> Este endpoint guarda el intento en la base de datos y actualiza automáticamente la racha del usuario. No hace falta llamar a nada más después.
+> Este endpoint guarda el intento en la base de datos y actualiza automáticamente la racha y la XP del usuario. No hace falta llamar a nada más después.
+
+**Sobre `xp` y `progreso`:**
+- `xp.ganada` es lo que generó el quiz; `xp.aplicada` es lo que realmente se sumó (puede ser menor si se alcanzó un límite diario).
+- `limiteIntentosAlcanzado: true` → el usuario **free** agotó sus intentos con XP del día. Puede seguir jugando pero gana 0 XP. **Momento ideal para ofrecer el plan pro.**
+- `intentosConXpRestantes` → cuántos intentos con XP le quedan hoy (`null` = ilimitado, plan pro).
+- `multiplicadorScore` → 0 si el score fue < 40%, 0.4 entre 40-69%, 1 desde 70%.
+- Si `progreso.subioNivel` es `true`, mostrar animación de subida de nivel (`nivelAnterior` → `nivel`).
+- Si `progreso.subioRango` es `true`, mostrar celebración de nuevo rango (`rangoAnterior` → `rango`).
+- `progressPercent` es el % de la barra de progreso hacia el siguiente nivel.
+- En el nivel máximo, `xpParaSubir` llega como `null` y la barra queda al 100%. **No mostrar al usuario cuál es el nivel máximo.**
 
 ---
 
@@ -307,59 +354,6 @@ GET /api/stats/tiempo-por-nivel
 
 ---
 
-### Racha más larga (leaderboard)
-```
-GET /api/stats/racha?limit=10
-```
-**Respuesta:**
-```json
-{
-  "ok": true,
-  "count": 10,
-  "ranking": [
-    {
-      "position": 1,
-      "username": "daniel",
-      "avatar": "https://...",
-      "currentStreak": 12,
-      "maxStreak": 30
-    }
-  ]
-}
-```
-
----
-
-### Mayor eficiencia (score + rapidez)
-```
-GET /api/stats/eficiencia?nivel=curioso&limit=10
-```
-**Query params opcionales:**
-- `?nivel=curioso` — filtrar por nivel específico (sin este param muestra el top global)
-- `?limit=10`
-
-**Respuesta:**
-```json
-{
-  "ok": true,
-  "count": 10,
-  "ranking": [
-    {
-      "position": 1,
-      "username": "daniel",
-      "avatar": "https://...",
-      "scorePercent": 100,
-      "timeTakenSecs": 95,
-      "timeTakenFormatted": "1:35",
-      "nivel": "curioso"
-    }
-  ]
-}
-```
-> Un resultado por usuario. Primero ordena por mayor score, luego por menor tiempo entre los que tienen el mismo score.
-
----
-
 ## ESTADÍSTICAS DEL USUARIO
 > Todos requieren `Authorization: Bearer <token>`.
 
@@ -377,6 +371,14 @@ GET /api/user-stats/dashboard
     "currentStreak": 5,
     "maxStreak": 12
   },
+  "progreso": {
+    "nivel": 7,
+    "rango": "Aprendiz",
+    "xpTotal": 560,
+    "xpEnNivel": 35,
+    "xpParaSubir": 175,
+    "progressPercent": 20
+  },
   "stats": {
     "totalIntentos": 42,
     "totalPreguntas": 380,
@@ -388,6 +390,136 @@ GET /api/user-stats/dashboard
   }
 }
 ```
+
+---
+
+### Nivel y rango del usuario
+```
+GET /api/user-stats/nivel
+```
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "progreso": {
+    "nivel": 7,
+    "rango": "Aprendiz",
+    "xpTotal": 560,
+    "xpEnNivel": 35,
+    "xpParaSubir": 175,
+    "progressPercent": 20
+  }
+}
+```
+> Para la pantalla de perfil. El mismo objeto `progreso` viene también en el dashboard y al calificar un quiz.
+
+---
+
+## SISTEMA DE NIVELES Y RANGOS
+
+La XP se gana **solo al calificar un quiz** (`POST /api/quiz/calificar`):
+
+| Acción | XP |
+|---|---|
+| Respuesta correcta dificultad 1 | **3 XP** |
+| Respuesta correcta dificultad 2 | **4 XP** |
+| Respuesta correcta dificultad 3 | **6 XP** |
+| Respuesta correcta dificultad 4 | **8 XP** |
+| Completar un quiz (≥ 5 preguntas calificadas y score ≥ 70%) | **+10 XP** |
+| Score ≥ 80% | **+5 XP** |
+| Score 100% (perfecto) | **+10 XP** adicionales |
+
+> La dificultad es la **real de cada pregunta** (calculada en el servidor) — un quiz de máxima dificultad rinde ~2.7x más XP que uno básico.
+
+**Puerta de score (anti-farming):**
+
+| Score final | XP ganada |
+|---|---|
+| < 40% | **0 XP** (responder al azar no da nada) |
+| 40% – 69% | Solo el **40%** de la XP base, sin bonus |
+| ≥ 70% | XP completa + bonus |
+
+**Diferencias por plan:**
+
+| Plan | Intentos con XP por día | Tope de XP por día | Niveles de dificultad | Preguntas por quiz |
+|---|---|---|---|---|
+| `free` | **5** (después gana 0 XP, puede seguir jugando) | 500 XP | curioso, analitico, estratega | 1 a 20 |
+| `pro` | Ilimitados | 1000 XP | todos + **genio** 🔒 | 1 a 50 🔒 |
+
+> Solo los intentos que **sí ganaron XP** consumen cupo — fallar un quiz no gasta intentos del plan free.
+
+- Curva: subir del nivel `n` al `n+1` cuesta `25 × n` XP (nivel 1→2: 25 XP; nivel 10→11: 250 XP).
+- Nivel máximo: **50** (⚠️ no mostrarlo en la app — el usuario solo ve su nivel, su XP y su rango).
+
+**Rangos (uno cada 5 niveles)** — para asignar insignias/iconos en Flutter:
+
+| Niveles | Rango |
+|---|---|
+| 1-4 | Novato |
+| 5-9 | Aprendiz |
+| 10-14 | Explorador |
+| 15-19 | Estudioso |
+| 20-24 | Conocedor |
+| 25-29 | Erudito |
+| 30-34 | Maestro |
+| 35-39 | Gran Maestro |
+| 40-44 | Sabio |
+| 45-50 | Leyenda |
+
+---
+
+### Ranking semanal de XP
+```
+GET /api/user-stats/ranking-semanal?limit=10
+```
+**Query params opcionales:**
+- `?limit=10` — tamaño del top, máximo 50 (default: 10)
+
+La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticamente cada lunes — no hay que llamar a nada para resetearlo.
+
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "semana": {
+    "inicio": "2026-07-06T00:00:00.000Z",
+    "fin": "2026-07-13T00:00:00.000Z"
+  },
+  "totalParticipantes": 87,
+  "top": [
+    {
+      "position": 1,
+      "username": "maria",
+      "avatar": "https://...",
+      "nivel": 23,
+      "rango": "Conocedor",
+      "xpSemana": 1240,
+      "quizzes": 18,
+      "esMiPosicion": false
+    }
+  ],
+  "yo": {
+    "position": 14,
+    "username": "daniel",
+    "avatar": "",
+    "nivel": 7,
+    "rango": "Aprendiz",
+    "xpSemana": 380,
+    "quizzes": 6,
+    "esMiPosicion": true
+  },
+  "vecinos": [
+    { "position": 12, "username": "carlos", "xpSemana": 415, "esMiPosicion": false },
+    { "position": 13, "username": "ana", "xpSemana": 400, "esMiPosicion": false },
+    { "position": 15, "username": "luis", "xpSemana": 350, "esMiPosicion": false }
+  ]
+}
+```
+**Cómo mostrarlo en Flutter:**
+- `top` → podio con avatares para los 3 primeros + lista del resto.
+- `yo` → posición fija del usuario (viene `null` si aún no ganó XP esta semana — mostrar "¡Juega un quiz para entrar al ranking!").
+- `vecinos` → los rivales directos (2 arriba y 2 abajo). Ideal para mensajes tipo *"Te faltan 35 XP para alcanzar a @carlos"* (`vecinos` arriba tuyo tienen `position` menor).
+- Con `semana.fin` se puede mostrar la cuenta regresiva ("El ranking cierra en 2 días").
 
 ---
 
@@ -510,7 +642,6 @@ GET /api/user-stats/evolucion?limit=20
 6. Terminar y calificar
    └── POST /api/quiz/calificar
 
-7. Ver leaderboard
-   ├── GET /api/stats/racha
-   └── GET /api/stats/eficiencia?nivel=curioso
+7. Ver ranking semanal
+   └── GET /api/user-stats/ranking-semanal
 ```

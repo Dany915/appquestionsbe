@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { query }  = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT }    = require('../middlewares/validar-jwt');
-const { dashboard, porTema, porNivel, evolucion, nivelUsuario } = require('../controllers/userStats');
+const { dashboard, porTema, porNivel, evolucion, nivelUsuario, rankingSemanal } = require('../controllers/userStats');
 
 const router = Router();
 
@@ -24,6 +24,19 @@ router.get('/dashboard', dashboard);
  * Progreso de nivel: nivel, rango, XP y % de la barra de progreso.
  */
 router.get('/nivel', nivelUsuario);
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/user-stats/ranking-semanal?limit=10
+ * Ranking de XP de la semana actual: top N + posición del usuario + vecinos.
+ */
+router.get('/ranking-semanal', [
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 50 }).withMessage('limit debe ser un número entre 1 y 50.'),
+    validarCampos,
+], rankingSemanal);
 
 // ──────────────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
-const { progresoNivel } = require('../helpers/leveling');
+const { progresoNivel, rangoDeNivel } = require('../helpers/leveling');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -254,4 +254,106 @@ const nivelUsuario = async (req, res) => {
     }
 };
 
-module.exports = { dashboard, porTema, porNivel, evolucion, nivelUsuario };
+// ─── Ranking semanal de XP ─────────────────────────────────────────────────────
+
+// Lunes 00:00 UTC de la semana actual
+const inicioSemanaUTC = () => {
+    const d = new Date();
+    d.setUTCHours(0, 0, 0, 0);
+    const diff = (d.getUTCDay() + 6) % 7; // lunes = 0, domingo = 6
+    d.setUTCDate(d.getUTCDate() - diff);
+    return d;
+};
+
+/**
+ * GET /api/user-stats/ranking-semanal?limit=10
+ * Ranking de XP ganada esta semana (lunes a domingo, UTC). Se reinicia cada lunes.
+ *
+ * Retorna:
+ *   - top:     los mejores N de la semana (podio)
+ *   - yo:      posición y XP del usuario autenticado (null si no ha jugado esta semana)
+ *   - vecinos: los 2 usuarios arriba y 2 abajo del usuario (sus rivales directos)
+ */
+const rankingSemanal = async (req, res) => {
+    const userId = req.uid;
+    const limit  = Math.min(parseInt(req.query.limit) || 10, 50);
+
+    try {
+        const inicio = inicioSemanaUTC();
+        const fin    = new Date(inicio);
+        fin.setUTCDate(fin.getUTCDate() + 7);
+
+        // XP semanal por usuario, ordenada de mayor a menor
+        const filas = await Attempt.aggregate([
+            { $match: { createdAt: { $gte: inicio }, xpGanada: { $gt: 0 } } },
+            {
+                $group: {
+                    _id:      '$userId',
+                    xpSemana: { $sum: '$xpGanada' },
+                    quizzes:  { $sum: 1 },
+                },
+            },
+            { $sort: { xpSemana: -1, quizzes: 1 } },
+        ]);
+
+        const miIndex = filas.findIndex(f => String(f._id) === userId);
+
+        // Índices que necesitamos resolver a usuario: top N + ventana alrededor del usuario
+        const indices = new Set();
+        for (let i = 0; i < Math.min(limit, filas.length); i++) indices.add(i);
+        if (miIndex >= 0) {
+            const desde = Math.max(0, miIndex - 2);
+            const hasta = Math.min(filas.length - 1, miIndex + 2);
+            for (let i = desde; i <= hasta; i++) indices.add(i);
+        }
+
+        const ids      = [...indices].map(i => filas[i]._id);
+        const usuarios = await User.find({ _id: { $in: ids }, active: true }, 'username avatar level');
+        const porId    = new Map(usuarios.map(u => [String(u._id), u]));
+
+        const filaRanking = (i) => {
+            const f = filas[i];
+            const u = porId.get(String(f._id));
+            return {
+                position:     i + 1,
+                username:     u?.username || 'Usuario',
+                avatar:       u?.avatar   || '',
+                nivel:        u?.level    || 1,
+                rango:        rangoDeNivel(u?.level || 1),
+                xpSemana:     f.xpSemana,
+                quizzes:      f.quizzes,
+                esMiPosicion: String(f._id) === userId,
+            };
+        };
+
+        const top = [];
+        for (let i = 0; i < Math.min(limit, filas.length); i++) top.push(filaRanking(i));
+
+        let yo      = null;
+        let vecinos = [];
+
+        if (miIndex >= 0) {
+            yo = filaRanking(miIndex);
+
+            const desde = Math.max(0, miIndex - 2);
+            const hasta = Math.min(filas.length - 1, miIndex + 2);
+            for (let i = desde; i <= hasta; i++) {
+                if (i !== miIndex) vecinos.push(filaRanking(i));
+            }
+        }
+
+        return res.status(200).json({
+            ok:     true,
+            semana: { inicio, fin },
+            totalParticipantes: filas.length,
+            top,
+            yo,       // null si el usuario aún no ganó XP esta semana
+            vecinos,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al obtener el ranking semanal.' });
+    }
+};
+
+module.exports = { dashboard, porTema, porNivel, evolucion, nivelUsuario, rankingSemanal };

@@ -42,6 +42,14 @@ const UserSchema = new Schema(
             default: 'user',
         },
 
+        // Plan del usuario — define los límites diarios de XP
+        // free: intentos con XP limitados por día · pro: intentos ilimitados
+        plan: {
+            type: String,
+            enum: ['free', 'pro'],
+            default: 'free',
+        },
+
         active: {
             type: Boolean,
             default: true,
@@ -57,7 +65,6 @@ const UserSchema = new Schema(
         maxStreak: {
             type: Number,
             default: 0,
-            index: true,
         },
 
         // Fecha del último intento (UTC) — usada para calcular la racha
@@ -83,6 +90,12 @@ const UserSchema = new Schema(
 
         // XP ganada en el día actual (UTC) — usada para el límite diario
         xpToday: {
+            type: Number,
+            default: 0,
+        },
+
+        // Intentos que ganaron XP en el día actual (UTC) — límite del plan free
+        xpAttemptsToday: {
             type: Number,
             default: 0,
         },

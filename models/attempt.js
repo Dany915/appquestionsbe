@@ -48,6 +48,10 @@ const AttemptSchema = new Schema(
     difficultySum: { type: Number, default: 0 },
     difficultyAvg: { type: Number, default: 0 },
 
+    // XP efectivamente otorgada por este intento (ya con límites aplicados)
+    // — es la base del ranking semanal de XP
+    xpGanada: { type: Number, default: 0 },
+
     // Detalle por pregunta respondida
     answers: [
       {
@@ -66,6 +70,6 @@ const AttemptSchema = new Schema(
 // Índices compuestos para stats de usuario y globales
 AttemptSchema.index({ userId: 1, createdAt: -1 });
 AttemptSchema.index({ userId: 1, nivel: 1, createdAt: -1 });
-AttemptSchema.index({ nivel: 1, scorePercent: -1 });   // leaderboard global por nivel
+AttemptSchema.index({ createdAt: -1, xpGanada: -1 });  // ranking semanal de XP
 
 module.exports = model('Attempt', AttemptSchema);

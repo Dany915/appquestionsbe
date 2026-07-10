@@ -39,6 +39,7 @@ const formatearUsuario = (user) => ({
     username: user.username,
     email:    user.email,
     role:     user.role,
+    plan:     user.plan || 'free',
     avatar:   user.avatar,
 });
 
@@ -244,4 +245,35 @@ const renovarToken = async (req, res = response) => {
     }
 };
 
-module.exports = { register, login, googleLogin, renovarToken };
+/**
+ * PUT /api/auth/plan/:userId
+ * Cambia el plan de un usuario (free/pro). Solo admin.
+ *
+ * Uso temporal para pruebas y gestión manual. Cuando se integre la suscripción
+ * de Google Play Billing, el plan se actualizará automáticamente al verificar
+ * el purchaseToken — este endpoint quedará como herramienta de soporte.
+ */
+const cambiarPlan = async (req, res = response) => {
+    const { userId } = req.params;
+    const { plan }   = req.body;
+
+    try {
+        const user = await User.findByIdAndUpdate(userId, { plan }, { new: true });
+
+        if (!user) {
+            return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
+        }
+
+        return res.status(200).json({
+            ok:   true,
+            msg:  `Plan actualizado a "${plan}".`,
+            user: formatearUsuario(user),
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al cambiar el plan.' });
+    }
+};
+
+module.exports = { register, login, googleLogin, renovarToken, cambiarPlan };

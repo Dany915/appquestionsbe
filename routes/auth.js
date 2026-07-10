@@ -1,8 +1,9 @@
 const { Router } = require('express');
-const { check } = require('express-validator');
+const { check, param } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT } = require('../middlewares/validar-jwt');
-const { register, login, googleLogin, renovarToken } = require('../controllers/auth');
+const { validarAdmin } = require('../middlewares/validar-admin');
+const { register, login, googleLogin, renovarToken, cambiarPlan } = require('../controllers/auth');
 
 const router = Router();
 
@@ -29,5 +30,14 @@ router.post('/google', [
 
 // GET /api/auth/renew  (token requerido)
 router.get('/renew', validarJWT, renovarToken);
+
+// PUT /api/auth/plan/:userId  (solo admin) — cambia el plan free/pro de un usuario
+router.put('/plan/:userId', [
+    validarJWT,
+    validarAdmin,
+    param('userId', 'El userId no es válido').isMongoId(),
+    check('plan', 'El plan debe ser "free" o "pro"').isIn(['free', 'pro']),
+    validarCampos,
+], cambiarPlan);
 
 module.exports = router;

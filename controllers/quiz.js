@@ -5,7 +5,8 @@ const Topic     = require('../models/topic');
 const User      = require('../models/user');
 const { calcularXpQuiz, otorgarXp } = require('../helpers/leveling');
 
-const MAX_PREGUNTAS = 50;
+const MAX_PREGUNTAS      = 50;  // tope absoluto (plan pro)
+const MAX_PREGUNTAS_FREE = 20;  // tope para plan free — los quizzes largos son perk pro
 
 // ─── Niveles de dificultad ─────────────────────────────────────────────────────
 
@@ -24,16 +25,18 @@ const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 /**
  * Busca hasta `count` preguntas aleatorias empezando desde `nivelInicial`.
  * Si no hay suficientes en ese nivel, completa con el siguiente nivel, y así sucesivamente.
+ * `nivelMaxIndex` limita hasta qué nivel puede llegar el fallback — evita que a un
+ * usuario free le lleguen preguntas de "genio" al pedir "estratega".
  * Retorna las preguntas mezcladas aleatoriamente y un mapa de distribución por nivel.
  */
-const fetchPreguntasConFallback = async (topicIds, nivelInicial, count) => {
+const fetchPreguntasConFallback = async (topicIds, nivelInicial, count, nivelMaxIndex = NIVEL_ORDER.length - 1) => {
     const nivelIndex  = NIVEL_ORDER.indexOf(nivelInicial);
     const preguntas   = [];
     const usedIds     = new Set();
     const distribucion = {};
     let remaining     = count;
 
-    for (let i = nivelIndex; i < NIVEL_ORDER.length && remaining > 0; i++) {
+    for (let i = nivelIndex; i <= nivelMaxIndex && remaining > 0; i++) {
         const nivel = NIVEL_ORDER[i];
         const tipos = NIVEL_TIPOS[nivel];
 
@@ -168,6 +171,16 @@ const generarQuiz = async (req, res) => {
         });
     }
 
+    // El nivel "genio" es exclusivo del plan pro
+    const esPro = req.user?.plan === 'pro';
+    if (nivelKey === 'genio' && !esPro) {
+        return res.status(403).json({
+            ok:              false,
+            upgradeRequired: true,
+            msg:             'El nivel Genio es exclusivo del plan Pro. Mejora tu plan para desbloquearlo.',
+        });
+    }
+
     let n = 10;
     if (count !== undefined) {
         n = parseInt(count, 10);
@@ -177,6 +190,15 @@ const generarQuiz = async (req, res) => {
                 msg: `El parámetro "count" debe ser un número entre 1 y ${MAX_PREGUNTAS}.`,
             });
         }
+    }
+
+    // Los quizzes de más de MAX_PREGUNTAS_FREE preguntas son exclusivos del plan pro
+    if (n > MAX_PREGUNTAS_FREE && !esPro) {
+        return res.status(403).json({
+            ok:              false,
+            upgradeRequired: true,
+            msg:             `Los quizzes de más de ${MAX_PREGUNTAS_FREE} preguntas son exclusivos del plan Pro. Mejora tu plan para desbloquearlos.`,
+        });
     }
 
     try {
@@ -228,8 +250,13 @@ const generarQuiz = async (req, res) => {
             topicIds = temas.map(t => t._id);
         }
 
-        // Buscar preguntas con fallback por nivel
-        const { preguntas, distribucion } = await fetchPreguntasConFallback(topicIds, nivelKey, n);
+        // Buscar preguntas con fallback por nivel.
+        // Los usuarios free no reciben preguntas de "genio" ni siquiera por fallback.
+        const nivelMaxIndex = esPro
+            ? NIVEL_ORDER.length - 1
+            : NIVEL_ORDER.indexOf('estratega');
+
+        const { preguntas, distribucion } = await fetchPreguntasConFallback(topicIds, nivelKey, n, nivelMaxIndex);
 
         if (preguntas.length === 0) {
             return res.status(404).json({
@@ -283,6 +310,17 @@ const calificarQuiz = async (req, res) => {
         return res.status(400).json({
             ok: false,
             msg: 'Debes enviar "answers" como un arreglo con al menos 1 respuesta.',
+        });
+    }
+
+    // Mismo límite de preguntas por plan que al generar el quiz — evita que un
+    // usuario free junte varios quizzes en una sola calificación (un solo
+    // intento con XP del día para el doble de preguntas)
+    const maxRespuestas = req.user?.plan === 'pro' ? MAX_PREGUNTAS : MAX_PREGUNTAS_FREE;
+    if (answers.length > maxRespuestas) {
+        return res.status(400).json({
+            ok:  false,
+            msg: `Solo puedes calificar hasta ${maxRespuestas} respuestas por quiz con tu plan.`,
         });
     }
 
@@ -409,6 +447,48 @@ const calificarQuiz = async (req, res) => {
         const segs        = tiempoSecs % 60;
         const tiempoFormateado = `${mins}:${String(segs).padStart(2, '0')}`;
 
+        // Otorgar XP y calcular progreso de nivel ANTES de guardar el intento,
+        // para persistir en él la XP efectivamente ganada (base del ranking semanal).
+        // Si falla, el quiz igual se califica — xp y progreso llegan como null.
+        let xpInfo       = null;
+        let progresoInfo = null;
+        let xpAplicada   = 0;
+
+        try {
+            const desglose  = calcularXpQuiz(respuestasBD, scorePercent, totalCalificadas);
+            const resultado = await otorgarXp(userId, desglose.total);
+
+            if (resultado) {
+                xpAplicada = resultado.xpAplicada;
+
+                xpInfo = {
+                    ganada:   desglose.total,
+                    aplicada: resultado.xpAplicada,
+                    desglose: {
+                        respuestasCorrectas: desglose.respuestasCorrectas,
+                        quizCompletado:      desglose.quizCompletado,
+                        scoreAlto:           desglose.scoreAlto,
+                        perfecto:            desglose.perfecto,
+                    },
+                    multiplicadorScore:      desglose.multiplicadorScore,
+                    limiteDiarioAlcanzado:   resultado.limiteDiarioAlcanzado,
+                    limiteIntentosAlcanzado: resultado.limiteIntentosAlcanzado,
+                    intentosConXpRestantes:  resultado.intentosConXpRestantes,
+                    plan:                    resultado.plan,
+                };
+
+                progresoInfo = {
+                    ...resultado.progreso,
+                    subioNivel:    resultado.subioNivel,
+                    nivelAnterior: resultado.nivelAntes,
+                    subioRango:    resultado.subioRango,
+                    rangoAnterior: resultado.rangoAntes,
+                };
+            }
+        } catch (err) {
+            console.error('Error otorgando XP:', err);
+        }
+
         await Attempt.create({
             userId,
             nivel:         nivelValido,
@@ -423,45 +503,12 @@ const calificarQuiz = async (req, res) => {
             scorePercent,
             difficultySum,
             difficultyAvg: Number(difficultyAvg.toFixed(2)),
+            xpGanada:      xpAplicada,
             answers:       respuestasBD,
         });
 
         // Actualizar racha del usuario (no bloqueante — fallo silencioso)
         actualizarRacha(userId).catch(err => console.error('Error actualizando racha:', err));
-
-        // Otorgar XP y calcular progreso de nivel.
-        // Si falla, el quiz igual se califica — xp y progreso llegan como null.
-        let xpInfo       = null;
-        let progresoInfo = null;
-
-        try {
-            const desglose  = calcularXpQuiz(respuestasBD, scorePercent, totalCalificadas);
-            const resultado = await otorgarXp(userId, desglose.total);
-
-            if (resultado) {
-                xpInfo = {
-                    ganada:   desglose.total,
-                    aplicada: resultado.xpAplicada,
-                    desglose: {
-                        respuestasCorrectas: desglose.respuestasCorrectas,
-                        quizCompletado:      desglose.quizCompletado,
-                        scoreAlto:           desglose.scoreAlto,
-                        perfecto:            desglose.perfecto,
-                    },
-                    limiteDiarioAlcanzado: resultado.limiteDiarioAlcanzado,
-                };
-
-                progresoInfo = {
-                    ...resultado.progreso,
-                    subioNivel:    resultado.subioNivel,
-                    nivelAnterior: resultado.nivelAntes,
-                    subioRango:    resultado.subioRango,
-                    rangoAnterior: resultado.rangoAntes,
-                };
-            }
-        } catch (err) {
-            console.error('Error otorgando XP:', err);
-        }
 
         return res.status(200).json({
             ok:                 true,
