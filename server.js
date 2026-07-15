@@ -39,6 +39,11 @@ class Server {
             res.sendFile(path.join(__dirname, 'public', 'privacidad.html'));
         });
 
+        // Eliminación de cuenta/datos — URL requerida por Google Play
+        this.app.get('/eliminar-cuenta', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'eliminar-cuenta.html'));
+        });
+
         this.app.use(this.paths.auth,     require('./routes/auth'));
         this.app.use(this.paths.question, require('./routes/question'));
         this.app.use(this.paths.quiz,     require('./routes/quiz'));
