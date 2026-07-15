@@ -7,8 +7,16 @@ const User = require('../models/user');
 
 // ─── Configuración ────────���────────────────────────────────────────────────────
 
-// Se instancia una sola vez al cargar el módulo (no en cada petición)
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Se instancia una sola vez al cargar el módulo (no en cada petición).
+// GOOGLE_CLIENT_ID admite varios IDs separados por coma (ej: el cliente web
+// que usa la app Flutter como serverClientId + otros clientes del proyecto).
+// El token se acepta si su `aud` coincide con cualquiera de la lista.
+const googleClientIds = (process.env.GOOGLE_CLIENT_ID || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+const googleClient = new OAuth2Client(googleClientIds[0]);
 
 // ─── Helpers ──────────────────────────────────────────────────���────────────────
 
@@ -162,7 +170,7 @@ const googleLogin = async (req, res = response) => {
         // Verificar el token con Google (lanza error si es inválido o expirado)
         const ticket = await googleClient.verifyIdToken({
             idToken:  token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: googleClientIds,
         });
 
         const { sub: googleId, email, name, picture } = ticket.getPayload();
@@ -193,9 +201,10 @@ const googleLogin = async (req, res = response) => {
             });
 
         } else {
-            // Usuario existente: sincronizar googleId y avatar si aún no los tiene
-            if (!user.googleId)          user.googleId = googleId;
-            if (!user.avatar && picture) user.avatar   = picture;
+            // Usuario existente: vincular googleId si aún no lo tiene y
+            // sincronizar el avatar con la foto actual de Google en cada login
+            if (!user.googleId) user.googleId = googleId;
+            if (picture)        user.avatar   = picture;
         }
 
         if (!user.active) {
@@ -218,6 +227,10 @@ const googleLogin = async (req, res = response) => {
         // Errores conocidos de google-auth-library
         if (error.message?.includes('Invalid token') || error.message?.includes('Token used too late')) {
             return res.status(401).json({ ok: false, msg: 'El token de Google es inválido o ha expirado.' });
+        }
+        // Audiencia incorrecta: el token viene de un client ID no registrado en GOOGLE_CLIENT_ID
+        if (error.message?.includes('audience') || error.message?.includes('Wrong recipient')) {
+            return res.status(401).json({ ok: false, msg: 'El token de Google no corresponde a esta aplicación.' });
         }
 
         return res.status(500).json({ ok: false, msg: 'Error interno al autenticar con Google.' });
