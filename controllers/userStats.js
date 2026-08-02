@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
-const { progresoNivel, rangoDeNivel } = require('../helpers/leveling');
+const { progresoNivel } = require('../helpers/leveling');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -372,20 +372,24 @@ const rankingSemanal = async (req, res) => {
         }
 
         const ids      = [...indices].map(i => filas[i]._id);
-        const usuarios = await User.find({ _id: { $in: ids }, active: true }, 'username avatar level');
+        const usuarios = await User.find({ _id: { $in: ids }, active: true }, 'username avatar xp');
         const porId    = new Map(usuarios.map(u => [String(u._id), u]));
 
         const filaRanking = (i) => {
             const f = filas[i];
             const u = porId.get(String(f._id));
+            // El nivel se deriva de la XP total (misma fuente de verdad que el
+            // dashboard y el perfil). No se usa el campo `level` denormalizado
+            // para que el ranking no quede desincronizado.
+            const prog = progresoNivel(u?.xp || 0);
             return {
                 position:     i + 1,
                 // Necesario para abrir el perfil público desde el ranking
                 uid:          String(f._id),
                 username:     u?.username || 'Usuario',
                 avatar:       u?.avatar   || '',
-                nivel:        u?.level    || 1,
-                rango:        rangoDeNivel(u?.level || 1),
+                nivel:        prog.nivel,
+                rango:        prog.rango,
                 xpSemana:     f.xpSemana,
                 quizzes:      f.quizzes,
                 esMiPosicion: String(f._id) === userId,
