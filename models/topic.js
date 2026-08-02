@@ -34,6 +34,16 @@ const TopicSchema = new Schema(
       trim: true,
     },
 
+    // Breve descripción de lo que trata el tema (opcional).
+    // Ej: "Regula el uso del espectro radioeléctrico y sus concesiones."
+    // Si el tema no tiene descripción el campo simplemente no se guarda,
+    // en lugar de almacenarse como cadena vacía.
+    descripcion: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+    },
+
     // Permite desactivar un tema sin borrarlo
     active: {
       type: Boolean,

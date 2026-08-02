@@ -51,6 +51,7 @@ const generarLabelModulo = (moduleTag) => {
  *   moduleTag,       → tag del módulo al que pertenece, ej: "modulo_1"
  *   topicTag,        → tag único del tema, ej: "mod_1_ley_1105"
  *   label,           → texto visible para el usuario, ej: "Ley 1105"
+ *   descripcion,     → (opcional) breve descripción de lo que trata el tema
  *   moduleTagLabel,  → (opcional) label del módulo, ej: "Módulo 1" — se auto-genera si no se envía
  *   active,          → (opcional) boolean, default true
  * }
@@ -59,7 +60,7 @@ const generarLabelModulo = (moduleTag) => {
  * Ej: si moduleTag = "modulo_1", el topicTag debe iniciar con "mod_1_"
  */
 const crearTema = async (req, res = response) => {
-    const { moduleTag, moduleTagLabel, topicTag, label, active } = req.body || {};
+    const { moduleTag, moduleTagLabel, topicTag, label, descripcion, active } = req.body || {};
 
     // Validar moduleTag
     if (!esTagValido(moduleTag)) {
@@ -95,6 +96,18 @@ const crearTema = async (req, res = response) => {
         });
     }
 
+    // Validar descripcion (opcional)
+    if (descripcion !== undefined && descripcion !== null && typeof descripcion !== 'string') {
+        return res.status(400).json({ ok: false, msg: 'El campo "descripcion" debe ser un texto.' });
+    }
+    const safeDescripcion = typeof descripcion === 'string' ? descripcion.trim() : '';
+    if (safeDescripcion.length > 300) {
+        return res.status(400).json({
+            ok: false,
+            msg: 'El campo "descripcion" no puede superar los 300 caracteres.',
+        });
+    }
+
     // Validar active (opcional)
     const safeActive = active ?? true;
     if (typeof safeActive !== 'boolean') {
@@ -113,6 +126,9 @@ const crearTema = async (req, res = response) => {
             topicTag:       topicTag.trim(),
             label:          label.trim(),
             active:         safeActive,
+            // Solo se incluye si trae contenido: los temas sin descripción
+            // no guardan el campo en la base de datos.
+            ...(safeDescripcion.length > 0 && { descripcion: safeDescripcion }),
         });
 
         const guardado = await nuevoTema.save();
@@ -161,7 +177,7 @@ const obtenerTemasPorModulo = async (req, res = response) => {
 
         const temas = await Topic
             .find(filtro)
-            .select('moduleTag moduleTagLabel topicTag label active')
+            .select('moduleTag moduleTagLabel topicTag label descripcion active')
             .sort({ label: 1 });
 
         return res.status(200).json({
@@ -239,9 +255,11 @@ const obtenerModulos = async (req, res = response) => {
 
 /**
  * PUT /api/topic/:id
- * Actualiza los campos editables de un tema: label y/o moduleTagLabel.
+ * Actualiza los campos editables de un tema: label, moduleTagLabel y/o descripcion.
  * El topicTag y moduleTag no se pueden cambiar (son identificadores).
- * Body: { label, moduleTagLabel }
+ * Body: { label, moduleTagLabel, descripcion }
+ *
+ * Enviar "descripcion" como cadena vacía elimina la descripción del tema.
  */
 const actualizarTema = async (req, res = response) => {
     const { id } = req.params;
@@ -250,13 +268,13 @@ const actualizarTema = async (req, res = response) => {
         return res.status(400).json({ ok: false, msg: 'El ID proporcionado no es válido.' });
     }
 
-    const { label, moduleTagLabel } = req.body || {};
+    const { label, moduleTagLabel, descripcion } = req.body || {};
 
-    // Al menos uno de los dos campos debe venir
-    if (label === undefined && moduleTagLabel === undefined) {
+    // Al menos uno de los campos editables debe venir
+    if (label === undefined && moduleTagLabel === undefined && descripcion === undefined) {
         return res.status(400).json({
             ok: false,
-            msg: 'Debes enviar al menos uno de estos campos: "label", "moduleTagLabel".',
+            msg: 'Debes enviar al menos uno de estos campos: "label", "moduleTagLabel", "descripcion".',
         });
     }
 
@@ -268,6 +286,18 @@ const actualizarTema = async (req, res = response) => {
         return res.status(400).json({ ok: false, msg: 'El campo "moduleTagLabel" debe ser un texto no vacío.' });
     }
 
+    // La descripción sí admite cadena vacía: se usa para borrarla
+    if (descripcion !== undefined && typeof descripcion !== 'string') {
+        return res.status(400).json({ ok: false, msg: 'El campo "descripcion" debe ser un texto.' });
+    }
+
+    if (typeof descripcion === 'string' && descripcion.trim().length > 300) {
+        return res.status(400).json({
+            ok: false,
+            msg: 'El campo "descripcion" no puede superar los 300 caracteres.',
+        });
+    }
+
     try {
         const tema = await Topic.findById(id);
         if (!tema) {
@@ -276,6 +306,12 @@ const actualizarTema = async (req, res = response) => {
 
         if (label !== undefined)           tema.label          = label.trim();
         if (moduleTagLabel !== undefined)  tema.moduleTagLabel = moduleTagLabel.trim();
+
+        if (descripcion !== undefined) {
+            const limpia = descripcion.trim();
+            // Cadena vacía → se elimina el campo del documento (no se guarda "")
+            tema.descripcion = limpia.length > 0 ? limpia : undefined;
+        }
 
         const actualizado = await tema.save();
 

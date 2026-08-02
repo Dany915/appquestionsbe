@@ -127,12 +127,15 @@ GET /api/topic?moduleTag=modulo_1
       "moduleTagLabel": "Módulo 1",
       "topicTag": "mod_1_ley_1105",
       "label": "Ley 1105",
+      "descripcion": "Regula el uso del espectro radioeléctrico y sus concesiones.",
       "active": true
     }
   ]
 }
 ```
 > El `_id` de cada tema es lo que se manda al crear preguntas y al generar el quiz con topicTags. El `topicTag` (string) es lo que se manda en el body de calificar.
+
+> **`descripcion` es opcional** (máx. 300 caracteres): breve resumen de lo que trata el tema. Los temas que no la tienen **no incluyen la clave** en la respuesta — no llega como cadena vacía. En Flutter tratar ausente, `null` y `""` como "sin descripción". Se muestra al mantener pulsada la tarjeta del tema.
 
 ---
 
@@ -489,6 +492,7 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
   "top": [
     {
       "position": 1,
+      "uid": "664a1f...",
       "username": "maria",
       "avatar": "https://...",
       "nivel": 23,
@@ -500,6 +504,7 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
   ],
   "yo": {
     "position": 14,
+    "uid": "664b2a...",
     "username": "daniel",
     "avatar": "",
     "nivel": 7,
@@ -509,17 +514,73 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
     "esMiPosicion": true
   },
   "vecinos": [
-    { "position": 12, "username": "carlos", "xpSemana": 415, "esMiPosicion": false },
-    { "position": 13, "username": "ana", "xpSemana": 400, "esMiPosicion": false },
-    { "position": 15, "username": "luis", "xpSemana": 350, "esMiPosicion": false }
+    { "position": 12, "uid": "664c3b...", "username": "carlos", "nivel": 9, "rango": "Aprendiz", "xpSemana": 415, "quizzes": 7, "esMiPosicion": false },
+    { "position": 13, "uid": "664d4c...", "username": "ana", "nivel": 8, "rango": "Aprendiz", "xpSemana": 400, "quizzes": 6, "esMiPosicion": false },
+    { "position": 15, "uid": "664e5d...", "username": "luis", "nivel": 6, "rango": "Aprendiz", "xpSemana": 350, "quizzes": 5, "esMiPosicion": false }
   ]
 }
 ```
 **Cómo mostrarlo en Flutter:**
-- `top` → podio con avatares para los 3 primeros + lista del resto.
+- `top` → lista con los 3 primeros destacados (mayor tamaño y aro dorado/plata/bronce) + el resto en tamaño uniforme.
 - `yo` → posición fija del usuario (viene `null` si aún no ganó XP esta semana — mostrar "¡Juega un quiz para entrar al ranking!").
 - `vecinos` → los rivales directos (2 arriba y 2 abajo). Ideal para mensajes tipo *"Te faltan 35 XP para alcanzar a @carlos"* (`vecinos` arriba tuyo tienen `position` menor).
 - Con `semana.fin` se puede mostrar la cuenta regresiva ("El ranking cierra en 2 días").
+- `uid` → id del jugador: se usa para abrir su **perfil público** al tocar la fila (ver endpoint siguiente).
+
+> Todas las filas (`top`, `yo` y `vecinos`) tienen la misma estructura.
+
+---
+
+### Perfil público de otro usuario
+```
+GET /api/user-stats/perfil/:uid
+```
+**Header:** `Authorization: Bearer <token>` (requerido)
+
+El `uid` sale de cualquier fila del ranking semanal. Sirve para abrir el perfil de otro jugador al tocarlo en el ranking.
+
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "user": {
+    "uid": "664a1f...",
+    "username": "maria",
+    "avatar": "https://...",
+    "currentStreak": 12,
+    "maxStreak": 30
+  },
+  "progreso": {
+    "nivel": 23,
+    "rango": "Conocedor",
+    "xpTotal": 6200,
+    "xpEnNivel": 120,
+    "xpParaSubir": 575,
+    "progressPercent": 21
+  },
+  "stats": {
+    "totalIntentos": 84,
+    "totalPreguntas": 720,
+    "tiempoTotal": 15400,
+    "tiempoTotalFormateado": "4h 16m",
+    "avgScore": 78.4,
+    "bestScore": 100
+  },
+  "porNivel": [
+    {
+      "nivel": "curioso",
+      "totalIntentos": 40,
+      "avgScore": 82.1,
+      "bestScore": 100,
+      "avgTimeSecs": 185,
+      "avgTimeFormatted": "3:05"
+    }
+  ]
+}
+```
+
+> **Privacidad:** solo devuelve datos públicos. **Nunca** incluye email, rol ni plan. Si el usuario no existe o su cuenta está desactivada responde **404**.
+> `porNivel` siempre trae los 4 niveles de dificultad (con ceros los que no ha jugado), igual que `/por-nivel`.
 
 ---
 
@@ -644,4 +705,7 @@ GET /api/user-stats/evolucion?limit=20
 
 7. Ver ranking semanal
    └── GET /api/user-stats/ranking-semanal
+
+8. Tocar a otro jugador del ranking
+   └── GET /api/user-stats/perfil/:uid   (el uid viene en la fila del ranking)
 ```

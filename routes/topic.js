@@ -65,6 +65,11 @@ router.post('/', [...soloAdmin,
         .notEmpty().withMessage('El campo "label" es requerido (texto visible para el usuario, ej: "Ley 1105").')
         .isString().withMessage('El campo "label" debe ser un texto.'),
 
+    body('descripcion')
+        .optional()
+        .isString().withMessage('El campo "descripcion" debe ser un texto.')
+        .isLength({ max: 300 }).withMessage('La descripción no puede superar los 300 caracteres.'),
+
     body('moduleTagLabel')
         .optional()
         .isString().withMessage('El campo "moduleTagLabel" debe ser un texto.'),
@@ -80,7 +85,7 @@ router.post('/', [...soloAdmin,
 
 /**
  * PUT /api/topic/:id
- * Actualiza el label o moduleTagLabel de un tema.
+ * Actualiza el label, moduleTagLabel o descripcion de un tema.
  * El topicTag y moduleTag no se pueden cambiar.
  */
 router.put('/:id', [...soloAdmin,
@@ -96,6 +101,12 @@ router.put('/:id', [...soloAdmin,
         .optional()
         .notEmpty().withMessage('El campo "moduleTagLabel" no puede estar vacío.')
         .isString().withMessage('El campo "moduleTagLabel" debe ser un texto.'),
+
+    // Admite cadena vacía a propósito: es la forma de borrar la descripción.
+    body('descripcion')
+        .optional()
+        .isString().withMessage('El campo "descripcion" debe ser un texto.')
+        .isLength({ max: 300 }).withMessage('La descripción no puede superar los 300 caracteres.'),
 
     validarCampos,
 ], actualizarTema);

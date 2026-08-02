@@ -16,6 +16,60 @@ const formatTime = (totalSecs) => {
     return `${m}:${String(s).padStart(2, '0')}`;
 };
 
+// ─── Consultas reutilizables ───────────────────────────────────────────────────
+
+/** Totales de todos los intentos de un usuario. */
+const resumenGeneral = (userId) => Attempt.aggregate([
+    { $match: { userId } },
+    {
+        $group: {
+            _id:            null,
+            totalIntentos:  { $sum: 1 },
+            totalPreguntas: { $sum: '$totalAnswered' },
+            tiempoTotal:    { $sum: '$timeTakenSecs' },
+            avgScore:       { $avg: '$scorePercent' },
+            bestScore:      { $max: '$scorePercent' },
+        },
+    },
+]);
+
+/** Rendimiento por nivel de dificultad. Siempre devuelve los 4 niveles. */
+const statsPorNivel = async (userId) => {
+    const stats = await Attempt.aggregate([
+        { $match: { userId } },
+        {
+            $group: {
+                _id:           '$nivel',
+                totalIntentos: { $sum: 1 },
+                avgScore:      { $avg: '$scorePercent' },
+                bestScore:     { $max: '$scorePercent' },
+                avgTimeSecs:   { $avg: '$timeTakenSecs' },
+            },
+        },
+        {
+            $project: {
+                _id:           0,
+                nivel:         '$_id',
+                totalIntentos: 1,
+                avgScore:      { $round: ['$avgScore', 1] },
+                bestScore:     1,
+                avgTimeSecs:   { $round: ['$avgTimeSecs', 0] },
+            },
+        },
+    ]);
+
+    const mapa = Object.fromEntries(stats.map(s => [s.nivel, s]));
+
+    return NIVEL_ORDER.map(nivel => ({
+        nivel,
+        totalIntentos: mapa[nivel]?.totalIntentos || 0,
+        avgScore:      mapa[nivel]?.avgScore      || 0,
+        bestScore:     mapa[nivel]?.bestScore     || 0,
+        avgTimeSecs:   mapa[nivel]?.avgTimeSecs   || 0,
+        avgTimeFormatted: formatTime(mapa[nivel]?.avgTimeSecs || 0),
+    }));
+};
+
 // ─── Endpoints ─────────────────────────────────────────────────────────────────
 
 /**
@@ -30,19 +84,7 @@ const dashboard = async (req, res) => {
 
             User.findById(userId, 'username avatar currentStreak maxStreak xp'),
 
-            Attempt.aggregate([
-                { $match: { userId } },
-                {
-                    $group: {
-                        _id:            null,
-                        totalIntentos:  { $sum: 1 },
-                        totalPreguntas: { $sum: '$totalAnswered' },
-                        tiempoTotal:    { $sum: '$timeTakenSecs' },
-                        avgScore:       { $avg: '$scorePercent' },
-                        bestScore:      { $max: '$scorePercent' },
-                    },
-                },
-            ]),
+            resumenGeneral(userId),
 
             // El nivel en el que más quizzes ha hecho
             Attempt.aggregate([
@@ -156,41 +198,7 @@ const porNivel = async (req, res) => {
     const userId = new mongoose.Types.ObjectId(req.uid);
 
     try {
-        const stats = await Attempt.aggregate([
-            { $match: { userId } },
-            {
-                $group: {
-                    _id:           '$nivel',
-                    totalIntentos: { $sum: 1 },
-                    avgScore:      { $avg: '$scorePercent' },
-                    bestScore:     { $max: '$scorePercent' },
-                    avgTimeSecs:   { $avg: '$timeTakenSecs' },
-                },
-            },
-            {
-                $project: {
-                    _id:           0,
-                    nivel:         '$_id',
-                    totalIntentos: 1,
-                    avgScore:      { $round: ['$avgScore', 1] },
-                    bestScore:     1,
-                    avgTimeSecs:   { $round: ['$avgTimeSecs', 0] },
-                },
-            },
-        ]);
-
-        // Rellenar niveles sin intentos y ordenar
-        const mapa = Object.fromEntries(stats.map(s => [s.nivel, s]));
-
-        const resultado = NIVEL_ORDER.map(nivel => ({
-            nivel,
-            totalIntentos: mapa[nivel]?.totalIntentos || 0,
-            avgScore:      mapa[nivel]?.avgScore      || 0,
-            bestScore:     mapa[nivel]?.bestScore     || 0,
-            avgTimeSecs:   mapa[nivel]?.avgTimeSecs   || 0,
-            avgTimeFormatted: formatTime(mapa[nivel]?.avgTimeSecs || 0),
-        }));
-
+        const resultado = await statsPorNivel(userId);
         return res.status(200).json({ ok: true, stats: resultado });
     } catch (error) {
         console.error(error);
@@ -256,6 +264,62 @@ const nivelUsuario = async (req, res) => {
 
 // ─── Ranking semanal de XP ─────────────────────────────────────────────────────
 
+/**
+ * GET /api/user-stats/perfil/:uid
+ * Perfil público de otro usuario (el que se abre desde el ranking).
+ *
+ * Solo expone información pública: nombre, avatar, racha, nivel/rango,
+ * totales de actividad y rendimiento por dificultad.
+ * NUNCA devuelve email, rol ni plan.
+ */
+const perfilPublico = async (req, res) => {
+    const { uid } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(uid)) {
+        return res.status(400).json({ ok: false, msg: 'El ID proporcionado no es válido.' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(uid);
+
+    try {
+        const [user, resumen, porNivelStats] = await Promise.all([
+            User.findById(userId, 'username avatar currentStreak maxStreak xp active'),
+            resumenGeneral(userId),
+            statsPorNivel(userId),
+        ]);
+
+        if (!user || !user.active) {
+            return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
+        }
+
+        const s = resumen[0] || {};
+
+        return res.status(200).json({
+            ok:   true,
+            user: {
+                uid:           user._id,
+                username:      user.username,
+                avatar:        user.avatar,
+                currentStreak: user.currentStreak,
+                maxStreak:     user.maxStreak,
+            },
+            progreso: progresoNivel(user.xp || 0),
+            stats: {
+                totalIntentos:         s.totalIntentos  || 0,
+                totalPreguntas:        s.totalPreguntas || 0,
+                tiempoTotal:           s.tiempoTotal    || 0,
+                tiempoTotalFormateado: formatTime(s.tiempoTotal || 0),
+                avgScore:              s.avgScore ? Math.round(s.avgScore * 10) / 10 : 0,
+                bestScore:             s.bestScore || 0,
+            },
+            porNivel: porNivelStats,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al obtener el perfil.' });
+    }
+};
+
 // Lunes 00:00 UTC de la semana actual
 const inicioSemanaUTC = () => {
     const d = new Date();
@@ -316,6 +380,8 @@ const rankingSemanal = async (req, res) => {
             const u = porId.get(String(f._id));
             return {
                 position:     i + 1,
+                // Necesario para abrir el perfil público desde el ranking
+                uid:          String(f._id),
                 username:     u?.username || 'Usuario',
                 avatar:       u?.avatar   || '',
                 nivel:        u?.level    || 1,
@@ -356,4 +422,12 @@ const rankingSemanal = async (req, res) => {
     }
 };
 
-module.exports = { dashboard, porTema, porNivel, evolucion, nivelUsuario, rankingSemanal };
+module.exports = {
+    dashboard,
+    porTema,
+    porNivel,
+    evolucion,
+    nivelUsuario,
+    rankingSemanal,
+    perfilPublico,
+};

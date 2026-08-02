@@ -1,8 +1,16 @@
 const { Router } = require('express');
-const { query }  = require('express-validator');
+const { query, param } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT }    = require('../middlewares/validar-jwt');
-const { dashboard, porTema, porNivel, evolucion, nivelUsuario, rankingSemanal } = require('../controllers/userStats');
+const {
+    dashboard,
+    porTema,
+    porNivel,
+    evolucion,
+    nivelUsuario,
+    rankingSemanal,
+    perfilPublico,
+} = require('../controllers/userStats');
 
 const router = Router();
 
@@ -66,5 +74,18 @@ router.get('/evolucion', [
         .isInt({ min: 1, max: 50 }).withMessage('limit debe ser un número entre 1 y 50.'),
     validarCampos,
 ], evolucion);
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/user-stats/perfil/:uid
+ * Perfil público de otro usuario (se abre desde el ranking).
+ * Solo datos públicos: nunca email, rol ni plan.
+ */
+router.get('/perfil/:uid', [
+    param('uid')
+        .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
+    validarCampos,
+], perfilPublico);
 
 module.exports = router;
