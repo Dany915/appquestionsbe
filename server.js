@@ -12,9 +12,11 @@ class Server {
             auth:      '/api/auth',
             question:  '/api/question',
             quiz:      '/api/quiz',
+            curso:     '/api/curso',
             topic:     '/api/topic',
             stats:     '/api/stats',
             userStats: '/api/user-stats',
+            frames:    '/api/frames',
         };
 
         this.conectarBD();
@@ -47,9 +49,11 @@ class Server {
         this.app.use(this.paths.auth,     require('./routes/auth'));
         this.app.use(this.paths.question, require('./routes/question'));
         this.app.use(this.paths.quiz,     require('./routes/quiz'));
+        this.app.use(this.paths.curso,    require('./routes/curso'));
         this.app.use(this.paths.topic,    require('./routes/topic'));
         this.app.use(this.paths.stats,     require('./routes/stats'));
         this.app.use(this.paths.userStats, require('./routes/userStats'));
+        this.app.use(this.paths.frames,    require('./routes/frames'));
     }
 
     listen() {

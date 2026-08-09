@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
 const { progresoNivel } = require('../helpers/leveling');
+const { cerrarSemanasPendientes } = require('../helpers/weeklyClose');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -82,7 +83,7 @@ const dashboard = async (req, res) => {
     try {
         const [user, resumen, nivelFavorito] = await Promise.all([
 
-            User.findById(userId, 'username avatar currentStreak maxStreak xp'),
+            User.findById(userId, 'username avatar currentStreak maxStreak xp marcoEquipado'),
 
             resumenGeneral(userId),
 
@@ -109,6 +110,7 @@ const dashboard = async (req, res) => {
                 avatar:        user.avatar,
                 currentStreak: user.currentStreak,
                 maxStreak:     user.maxStreak,
+                marcoEquipado: user.marcoEquipado || null,
             },
             progreso: progresoNivel(user.xp || 0),
             stats: {
@@ -283,7 +285,7 @@ const perfilPublico = async (req, res) => {
 
     try {
         const [user, resumen, porNivelStats] = await Promise.all([
-            User.findById(userId, 'username avatar currentStreak maxStreak xp active'),
+            User.findById(userId, 'username avatar currentStreak maxStreak xp active marcoEquipado'),
             resumenGeneral(userId),
             statsPorNivel(userId),
         ]);
@@ -302,6 +304,7 @@ const perfilPublico = async (req, res) => {
                 avatar:        user.avatar,
                 currentStreak: user.currentStreak,
                 maxStreak:     user.maxStreak,
+                marcoEquipado: user.marcoEquipado || null,
             },
             progreso: progresoNivel(user.xp || 0),
             stats: {
@@ -343,6 +346,12 @@ const rankingSemanal = async (req, res) => {
     const limit  = Math.min(parseInt(req.query.limit) || 10, 50);
 
     try {
+        // Cierre perezoso: si quedaron semanas sin premiar, se reparten ahora.
+        // Falla en silencio para no tumbar el ranking si algo va mal.
+        cerrarSemanasPendientes().catch(
+            (err) => console.error('Error cerrando semanas pendientes:', err)
+        );
+
         const inicio = inicioSemanaUTC();
         const fin    = new Date(inicio);
         fin.setUTCDate(fin.getUTCDate() + 7);
@@ -372,7 +381,10 @@ const rankingSemanal = async (req, res) => {
         }
 
         const ids      = [...indices].map(i => filas[i]._id);
-        const usuarios = await User.find({ _id: { $in: ids }, active: true }, 'username avatar xp');
+        const usuarios = await User.find(
+            { _id: { $in: ids }, active: true },
+            'username avatar xp marcoEquipado'
+        );
         const porId    = new Map(usuarios.map(u => [String(u._id), u]));
 
         const filaRanking = (i) => {
@@ -388,6 +400,7 @@ const rankingSemanal = async (req, res) => {
                 uid:          String(f._id),
                 username:     u?.username || 'Usuario',
                 avatar:       u?.avatar   || '',
+                marcoEquipado: u?.marcoEquipado || null,
                 nivel:        prog.nivel,
                 rango:        prog.rango,
                 xpSemana:     f.xpSemana,

@@ -26,6 +26,10 @@ router.get('/modulos', [
         .optional()
         .isIn(['true', 'false']).withMessage('active debe ser "true" o "false".'),
 
+    query('cursoTag')
+        .optional()
+        .isString().withMessage('El parámetro "cursoTag" debe ser un texto.'),
+
     validarCampos,
 ], obtenerModulos);
 
@@ -38,6 +42,10 @@ router.get('/modulos', [
 router.get('/', [
     query('moduleTag')
         .notEmpty().withMessage('El parámetro "moduleTag" es requerido. Ej: ?moduleTag=modulo_1'),
+
+    query('cursoTag')
+        .optional()
+        .isString().withMessage('El parámetro "cursoTag" debe ser un texto.'),
 
     query('active')
         .optional()
@@ -53,6 +61,10 @@ router.get('/', [
  * Crea un nuevo tema dentro de un módulo.
  */
 router.post('/', [...soloAdmin,
+    body('cursoTag')
+        .notEmpty().withMessage('El campo "cursoTag" es requerido. Ej: "sena".')
+        .isString().withMessage('El campo "cursoTag" debe ser un texto.'),
+
     body('moduleTag')
         .notEmpty().withMessage('El campo "moduleTag" es requerido. Ej: "modulo_1".')
         .isString().withMessage('El campo "moduleTag" debe ser un texto.'),

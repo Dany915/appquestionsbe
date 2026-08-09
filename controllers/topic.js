@@ -1,6 +1,7 @@
 const { response } = require('express');
 const mongoose    = require('mongoose');
 const Topic       = require('../models/topic');
+const Curso       = require('../models/curso');
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,23 @@ const generarLabelModulo = (moduleTag) => {
  * Ej: si moduleTag = "modulo_1", el topicTag debe iniciar con "mod_1_"
  */
 const crearTema = async (req, res = response) => {
-    const { moduleTag, moduleTagLabel, topicTag, label, descripcion, active } = req.body || {};
+    const { cursoTag, moduleTag, moduleTagLabel, topicTag, label, descripcion, active } = req.body || {};
+
+    // Validar cursoTag — el tema debe colgar de un curso existente
+    if (!esTagValido(cursoTag)) {
+        return res.status(400).json({
+            ok: false,
+            msg: 'El campo "cursoTag" es requerido y solo admite letras, números, _ y -. Ej: "sena".',
+        });
+    }
+
+    const curso = await Curso.findOne({ cursoTag: cursoTag.trim() });
+    if (!curso) {
+        return res.status(404).json({
+            ok: false,
+            msg: `No existe el curso "${cursoTag}". Créalo antes de añadirle temas.`,
+        });
+    }
 
     // Validar moduleTag
     if (!esTagValido(moduleTag)) {
@@ -78,13 +95,19 @@ const crearTema = async (req, res = response) => {
         });
     }
 
-    // Validar que topicTag corresponda al módulo (convención de nombres)
-    const numeroModulo   = moduleTag.replace('modulo_', '');
-    const prefijoEsperado = `mod_${numeroModulo}_`;
-    if (!topicTag.startsWith(prefijoEsperado)) {
+    // Validar que topicTag corresponda al módulo (convención de nombres).
+    // Se admiten dos formas, para poder distinguir módulos homónimos de
+    // cursos distintos:  "mod_1_ley_1105"  o  "sena_mod_1_ley_1105"
+    const numeroModulo = moduleTag.replace('modulo_', '');
+    const prefijos = [
+        `mod_${numeroModulo}_`,
+        `${cursoTag.trim()}_mod_${numeroModulo}_`,
+    ];
+    if (!prefijos.some((p) => topicTag.startsWith(p))) {
         return res.status(400).json({
             ok: false,
-            msg: `El "topicTag" debe iniciar con "${prefijoEsperado}" para pertenecer al módulo "${moduleTag}".`,
+            msg: `El "topicTag" debe iniciar con "${prefijos[0]}" o "${prefijos[1]}" `
+               + `para pertenecer al módulo "${moduleTag}" del curso "${cursoTag}".`,
         });
     }
 
@@ -121,6 +144,7 @@ const crearTema = async (req, res = response) => {
 
     try {
         const nuevoTema = new Topic({
+            cursoTag:       cursoTag.trim(),
             moduleTag:      moduleTag.trim(),
             moduleTagLabel: safeModuleTagLabel,
             topicTag:       topicTag.trim(),
@@ -157,7 +181,7 @@ const crearTema = async (req, res = response) => {
  *   active     → (opcional) "true" | "false" — filtra por estado (default: todos)
  */
 const obtenerTemasPorModulo = async (req, res = response) => {
-    const { moduleTag, active } = req.query;
+    const { moduleTag, cursoTag, active } = req.query;
 
     if (typeof moduleTag !== 'string' || moduleTag.trim().length === 0) {
         return res.status(400).json({
@@ -173,16 +197,20 @@ const obtenerTemasPorModulo = async (req, res = response) => {
 
     try {
         const filtro = { moduleTag: moduleTag.trim() };
+        // Sin cursoTag se devolverían los temas de módulos homónimos de otros
+        // cursos: conviene enviarlo siempre desde la app.
+        if (cursoTag) filtro.cursoTag = String(cursoTag).trim();
         if (activeBool !== null) filtro.active = activeBool;
 
         const temas = await Topic
             .find(filtro)
-            .select('moduleTag moduleTagLabel topicTag label descripcion active')
+            .select('cursoTag moduleTag moduleTagLabel topicTag label descripcion active')
             .sort({ label: 1 });
 
         return res.status(200).json({
             ok: true,
             moduleTag: moduleTag.trim(),
+            cursoTag: cursoTag ? String(cursoTag).trim() : null,
             count: temas.length,
             topics: temas,
         });
@@ -201,7 +229,7 @@ const obtenerTemasPorModulo = async (req, res = response) => {
  *   active → (opcional) "true" | "false" — filtra módulos que tengan temas en ese estado
  */
 const obtenerModulos = async (req, res = response) => {
-    const { active } = req.query;
+    const { active, cursoTag } = req.query;
 
     const activeBool = parsearBooleano(active);
     if (active !== undefined && activeBool === null) {
@@ -210,25 +238,29 @@ const obtenerModulos = async (req, res = response) => {
 
     try {
         const pipeline = [];
+        const match = {};
 
-        // Filtrar por active si se envió
-        if (activeBool !== null) {
-            pipeline.push({ $match: { active: activeBool } });
-        }
+        if (activeBool !== null) match.active = activeBool;
+        if (cursoTag) match.cursoTag = String(cursoTag).trim();
+        if (Object.keys(match).length > 0) pipeline.push({ $match: match });
 
-        // Agrupar por moduleTag y tomar el primer moduleTagLabel encontrado
+        // Se agrupa por curso + módulo: dos cursos pueden tener "modulo_1" y
+        // agrupar solo por moduleTag los fusionaría en uno.
         pipeline.push(
             {
                 $group: {
-                    _id:            '$moduleTag',
+                    _id: { cursoTag: '$cursoTag', moduleTag: '$moduleTag' },
                     moduleTagLabel: { $first: '$moduleTagLabel' },
+                    totalTemas:     { $sum: 1 },
                 },
             },
             {
                 $project: {
                     _id:            0,
-                    moduleTag:      '$_id',
+                    cursoTag:       '$_id.cursoTag',
+                    moduleTag:      '$_id.moduleTag',
                     moduleTagLabel: 1,
+                    totalTemas:     1,
                 },
             }
         );
@@ -244,6 +276,7 @@ const obtenerModulos = async (req, res = response) => {
 
         return res.status(200).json({
             ok: true,
+            cursoTag: cursoTag ? String(cursoTag).trim() : null,
             count: modulos.length,
             modules: modulos,
         });

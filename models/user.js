@@ -105,6 +105,59 @@ const UserSchema = new Schema(
             type: Date,
             default: null,
         },
+
+        // Curso que el usuario está estudiando (cursoTag). Al entrar a
+        // Practicar se va directo a sus módulos, sin volver a elegir.
+        // null = todavía no ha seleccionado ninguno.
+        cursoActivo: {
+            type: String,
+            default: null,
+        },
+
+        // ─── Marcos de avatar ──────────────────────────────────────────────
+        // Ids "tema.estilo" (ej: "volcanic.static") que el usuario ha
+        // desbloqueado. Se otorgan por logros; nunca se quitan.
+        marcosDesbloqueados: {
+            type: [String],
+            default: [],
+        },
+
+        // Marco que lleva puesto. null = sin marco (avatar normal).
+        // Debe estar dentro de marcosDesbloqueados.
+        marcoEquipado: {
+            type: String,
+            default: null,
+        },
+
+        // Marcos desbloqueados que el usuario aún no ha visto celebrar.
+        // Es una cola: da igual dónde se otorgaron (quiz, cierre semanal,
+        // plan pro…), la app los muestra cuando puede y luego los marca vistos.
+        marcosPendientesAviso: {
+            type: [String],
+            default: [],
+        },
+
+        // ─── Historial del ranking semanal ─────────────────────────────────
+        // Se actualizan al cerrar cada semana. Alimentan los marcos dorados.
+
+        // Veces que ha quedado nº 1 de la semana
+        semanasTop1: {
+            type: Number,
+            default: 0,
+        },
+
+        // Semanas consecutivas dentro del top 3 (se reinicia si falla una)
+        rachaTop3: {
+            type: Number,
+            default: 0,
+        },
+
+        // Inicio de la última semana en la que estuvo en top 3 — sirve para
+        // saber si la siguiente es consecutiva
+        ultimaSemanaTop3: {
+            type: Date,
+            default: null,
+        },
     },
     { timestamps: true }
 );

@@ -49,6 +49,9 @@ const formatearUsuario = (user) => ({
     role:     user.role,
     plan:     user.plan || 'free',
     avatar:   user.avatar,
+    // Curso en el que está estudiando: la app entra directo a sus módulos
+    // sin volver a preguntar. null = aún no ha elegido ninguno.
+    cursoActivo: user.cursoActivo || null,
 });
 
 // ─── Endpoints ─────────────────────────────────────────────────��───────────────

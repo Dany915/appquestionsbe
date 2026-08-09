@@ -2,6 +2,15 @@ const { Schema, model } = require('mongoose');
 
 const TopicSchema = new Schema(
   {
+    // Curso al que pertenece el tema — nivel más alto de la jerarquía.
+    // Ej: "sena". Ver models/curso.js
+    cursoTag: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+
     // Tag del módulo (sirve para agrupar temas en la UI)
     // Ej: "modulo_1"
     moduleTag: {
@@ -55,7 +64,9 @@ const TopicSchema = new Schema(
   }
 );
 
-// Índice compuesto útil para listar por módulo rápidamente
+// Índices compuestos para los listados habituales
 TopicSchema.index({ moduleTag: 1, active: 1 });
+TopicSchema.index({ cursoTag: 1, active: 1 });
+TopicSchema.index({ cursoTag: 1, moduleTag: 1, active: 1 });
 
 module.exports = model('Topic', TopicSchema);

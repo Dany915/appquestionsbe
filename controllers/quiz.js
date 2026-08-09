@@ -4,6 +4,11 @@ const Attempt   = require('../models/attempt');
 const Topic     = require('../models/topic');
 const User      = require('../models/user');
 const { calcularXpQuiz, otorgarXp } = require('../helpers/leveling');
+const {
+    evaluarMarcosRacha,
+    evaluarMarcosPrimerQuiz,
+    evaluarMarcosQuizzes,
+} = require('../helpers/frameRewards');
 
 const MAX_PREGUNTAS      = 50;  // tope absoluto (plan pro)
 const MAX_PREGUNTAS_FREE = 20;  // tope para plan free — los quizzes largos son perk pro
@@ -92,10 +97,13 @@ const fetchPreguntasConFallback = async (topicIds, nivelInicial, count, nivelMax
  *   - Si ya hizo un intento hoy → racha no cambia (ya se contó)
  *   - Si el último intento fue ayer → se extiende la racha
  *   - Si pasó más de un día → se reinicia a 1
+ *
+ * Al final evalúa los marcos de racha. Devuelve los recién desbloqueados
+ * (array vacío si no hay ninguno).
  */
 const actualizarRacha = async (userId) => {
     const user = await User.findById(userId);
-    if (!user) return;
+    if (!user) return [];
 
     const hoy = new Date();
     hoy.setUTCHours(0, 0, 0, 0);
@@ -112,7 +120,9 @@ const actualizarRacha = async (userId) => {
         ultimoDia.setUTCHours(0, 0, 0, 0);
 
         if (ultimoDia.getTime() === hoy.getTime()) {
-            return; // ya hizo un intento hoy, no actualizar
+            // Ya hizo un intento hoy: la racha no cambia, pero se revalúan los
+            // marcos por si un hito quedó sin otorgar (p. ej. tras un fallo).
+            return evaluarMarcosRacha(userId, user.currentStreak);
         } else if (ultimoDia.getTime() === ayer.getTime()) {
             nuevaRacha = user.currentStreak + 1;
         } else {
@@ -125,6 +135,8 @@ const actualizarRacha = async (userId) => {
         maxStreak:       Math.max(nuevaRacha, user.maxStreak),
         lastAttemptDate: new Date(),
     });
+
+    return evaluarMarcosRacha(userId, nuevaRacha);
 };
 
 // ─── Endpoints ─────────────────────────────────────────────────────────────────
@@ -507,8 +519,23 @@ const calificarQuiz = async (req, res) => {
             answers:       respuestasBD,
         });
 
-        // Actualizar racha del usuario (no bloqueante — fallo silencioso)
-        actualizarRacha(userId).catch(err => console.error('Error actualizando racha:', err));
+        // Actualizar racha y evaluar los marcos que otorga este quiz.
+        // Un fallo aquí no debe tumbar la calificación: se registra y se sigue.
+        let marcosDesbloqueados = [];
+        try {
+            const porRacha = await actualizarRacha(userId) || [];
+            const porPrimerQuiz = await evaluarMarcosPrimerQuiz(
+                userId, nivelValido, scorePercent
+            );
+            const porQuizzes = await evaluarMarcosQuizzes(userId, {
+                scorePercent,
+                totalGraded: totalCalificadas,
+                nivel: nivelValido,
+            });
+            marcosDesbloqueados = [...porRacha, ...porPrimerQuiz, ...porQuizzes];
+        } catch (err) {
+            console.error('Error evaluando marcos:', err);
+        }
 
         return res.status(200).json({
             ok:                 true,
@@ -522,6 +549,8 @@ const calificarQuiz = async (req, res) => {
             difficultyAvg:      Number(difficultyAvg.toFixed(2)),
             xp:                 xpInfo,
             progreso:           progresoInfo,
+            // Marcos recién desbloqueados con este quiz (para celebrarlos)
+            marcosDesbloqueados,
             results:            resultados,
         });
 
