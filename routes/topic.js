@@ -86,6 +86,10 @@ router.post('/', [...soloAdmin,
         .optional()
         .isString().withMessage('El campo "moduleTagLabel" debe ser un texto.'),
 
+    body('orden')
+        .optional()
+        .isInt({ min: 0 }).withMessage('El campo "orden" debe ser un número entero mayor o igual a 0.'),
+
     body('active')
         .optional()
         .isBoolean().withMessage('El campo "active" debe ser true o false.'),
@@ -97,7 +101,7 @@ router.post('/', [...soloAdmin,
 
 /**
  * PUT /api/topic/:id
- * Actualiza el label, moduleTagLabel o descripcion de un tema.
+ * Actualiza el label, moduleTagLabel, descripcion u orden de un tema.
  * El topicTag y moduleTag no se pueden cambiar.
  */
 router.put('/:id', [...soloAdmin,
@@ -119,6 +123,10 @@ router.put('/:id', [...soloAdmin,
         .optional()
         .isString().withMessage('El campo "descripcion" debe ser un texto.')
         .isLength({ max: 300 }).withMessage('La descripción no puede superar los 300 caracteres.'),
+
+    body('orden')
+        .optional()
+        .isInt({ min: 0 }).withMessage('El campo "orden" debe ser un número entero mayor o igual a 0.'),
 
     validarCampos,
 ], actualizarTema);

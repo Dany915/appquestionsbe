@@ -61,7 +61,7 @@ const generarLabelModulo = (moduleTag) => {
  * Ej: si moduleTag = "modulo_1", el topicTag debe iniciar con "mod_1_"
  */
 const crearTema = async (req, res = response) => {
-    const { cursoTag, moduleTag, moduleTagLabel, topicTag, label, descripcion, active } = req.body || {};
+    const { cursoTag, moduleTag, moduleTagLabel, topicTag, label, descripcion, orden, active } = req.body || {};
 
     // Validar cursoTag — el tema debe colgar de un curso existente
     if (!esTagValido(cursoTag)) {
@@ -137,6 +137,15 @@ const crearTema = async (req, res = response) => {
         return res.status(400).json({ ok: false, msg: 'El campo "active" debe ser true o false.' });
     }
 
+    // Validar orden (opcional): posición del tema dentro del módulo
+    const safeOrden = orden ?? 0;
+    if (!Number.isInteger(safeOrden) || safeOrden < 0) {
+        return res.status(400).json({
+            ok: false,
+            msg: 'El campo "orden" debe ser un número entero mayor o igual a 0.',
+        });
+    }
+
     // Si no viene moduleTagLabel se genera automáticamente
     const safeModuleTagLabel = (typeof moduleTagLabel === 'string' && moduleTagLabel.trim().length > 0)
         ? moduleTagLabel.trim()
@@ -149,6 +158,7 @@ const crearTema = async (req, res = response) => {
             moduleTagLabel: safeModuleTagLabel,
             topicTag:       topicTag.trim(),
             label:          label.trim(),
+            orden:          safeOrden,
             active:         safeActive,
             // Solo se incluye si trae contenido: los temas sin descripción
             // no guardan el campo en la base de datos.
@@ -204,8 +214,9 @@ const obtenerTemasPorModulo = async (req, res = response) => {
 
         const temas = await Topic
             .find(filtro)
-            .select('cursoTag moduleTag moduleTagLabel topicTag label descripcion active')
-            .sort({ label: 1 });
+            .select('cursoTag moduleTag moduleTagLabel topicTag label descripcion orden active')
+            // El orden manda; el label solo desempata entre temas sin orden fijado
+            .sort({ orden: 1, label: 1 });
 
         return res.status(200).json({
             ok: true,
@@ -301,13 +312,20 @@ const actualizarTema = async (req, res = response) => {
         return res.status(400).json({ ok: false, msg: 'El ID proporcionado no es válido.' });
     }
 
-    const { label, moduleTagLabel, descripcion } = req.body || {};
+    const { label, moduleTagLabel, descripcion, orden } = req.body || {};
 
     // Al menos uno de los campos editables debe venir
-    if (label === undefined && moduleTagLabel === undefined && descripcion === undefined) {
+    if (label === undefined && moduleTagLabel === undefined && descripcion === undefined && orden === undefined) {
         return res.status(400).json({
             ok: false,
-            msg: 'Debes enviar al menos uno de estos campos: "label", "moduleTagLabel", "descripcion".',
+            msg: 'Debes enviar al menos uno de estos campos: "label", "moduleTagLabel", "descripcion", "orden".',
+        });
+    }
+
+    if (orden !== undefined && (!Number.isInteger(orden) || orden < 0)) {
+        return res.status(400).json({
+            ok: false,
+            msg: 'El campo "orden" debe ser un número entero mayor o igual a 0.',
         });
     }
 
@@ -339,6 +357,7 @@ const actualizarTema = async (req, res = response) => {
 
         if (label !== undefined)           tema.label          = label.trim();
         if (moduleTagLabel !== undefined)  tema.moduleTagLabel = moduleTagLabel.trim();
+        if (orden !== undefined)           tema.orden          = orden;
 
         if (descripcion !== undefined) {
             const limpia = descripcion.trim();

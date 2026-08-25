@@ -53,6 +53,17 @@ const TopicSchema = new Schema(
       maxlength: 300,
     },
 
+    // Orden de aparición dentro del módulo (menor primero).
+    // Los temas se listan por este campo y, a igualdad, por label. Así el
+    // orden lo decide la secuencia pedagógica y no el alfabeto: sin él,
+    // "Ejecución del mantenimiento" saldría antes que "Preparar el
+    // mantenimiento". Los temas antiguos se quedan en 0 y siguen ordenándose
+    // alfabéticamente entre ellos.
+    orden: {
+      type: Number,
+      default: 0,
+    },
+
     // Permite desactivar un tema sin borrarlo
     active: {
       type: Boolean,
