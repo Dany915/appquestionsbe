@@ -3,6 +3,8 @@ const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
 const { progresoNivel } = require('../helpers/leveling');
 const { cerrarSemanasPendientes } = require('../helpers/weeklyClose');
+const { nombreVisible } = require('../helpers/displayName');
+const { estadoRacha }   = require('../helpers/racha');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -83,7 +85,7 @@ const dashboard = async (req, res) => {
     try {
         const [user, resumen, nivelFavorito] = await Promise.all([
 
-            User.findById(userId, 'username avatar currentStreak maxStreak xp marcoEquipado'),
+            User.findById(userId, 'username displayName avatar currentStreak maxStreak lastAttemptDate utcOffsetMin xp marcoEquipado'),
 
             resumenGeneral(userId),
 
@@ -101,16 +103,25 @@ const dashboard = async (req, res) => {
             return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
         }
 
-        const s = resumen[0] || {};
+        const s     = resumen[0] || {};
+        const racha = estadoRacha(user);
 
         return res.status(200).json({
             ok:   true,
             user: {
                 username:      user.username,
+                displayName:   nombreVisible(user),
                 avatar:        user.avatar,
-                currentStreak: user.currentStreak,
+                // Racha real: 0 si ya la perdió aunque la BD guarde la vieja
+                currentStreak: racha.rachaEfectiva,
                 maxStreak:     user.maxStreak,
                 marcoEquipado: user.marcoEquipado || null,
+            },
+            // Para que la app avise antes de que se pierda (notificación local)
+            racha: {
+                jugoHoy:  racha.jugoHoy,
+                enRiesgo: racha.enRiesgo,
+                expiraEn: racha.expiraEn,
             },
             progreso: progresoNivel(user.xp || 0),
             stats: {
@@ -285,7 +296,7 @@ const perfilPublico = async (req, res) => {
 
     try {
         const [user, resumen, porNivelStats] = await Promise.all([
-            User.findById(userId, 'username avatar currentStreak maxStreak xp active marcoEquipado'),
+            User.findById(userId, 'username displayName avatar currentStreak maxStreak lastAttemptDate utcOffsetMin xp active marcoEquipado'),
             resumenGeneral(userId),
             statsPorNivel(userId),
         ]);
@@ -301,8 +312,9 @@ const perfilPublico = async (req, res) => {
             user: {
                 uid:           user._id,
                 username:      user.username,
+                displayName:   nombreVisible(user),
                 avatar:        user.avatar,
-                currentStreak: user.currentStreak,
+                currentStreak: estadoRacha(user).rachaEfectiva,
                 maxStreak:     user.maxStreak,
                 marcoEquipado: user.marcoEquipado || null,
             },
@@ -383,7 +395,7 @@ const rankingSemanal = async (req, res) => {
         const ids      = [...indices].map(i => filas[i]._id);
         const usuarios = await User.find(
             { _id: { $in: ids }, active: true },
-            'username avatar xp marcoEquipado'
+            'username displayName avatar xp marcoEquipado'
         );
         const porId    = new Map(usuarios.map(u => [String(u._id), u]));
 
@@ -399,6 +411,7 @@ const rankingSemanal = async (req, res) => {
                 // Necesario para abrir el perfil público desde el ranking
                 uid:          String(f._id),
                 username:     u?.username || 'Usuario',
+                displayName:  nombreVisible(u),
                 avatar:       u?.avatar   || '',
                 marcoEquipado: u?.marcoEquipado || null,
                 nivel:        prog.nivel,

@@ -3,6 +3,7 @@ const User        = require('../models/user');
 const WeeklyClose = require('../models/weeklyClose');
 const { otorgarMarcos }    = require('./frames');
 const { marcosPorRanking } = require('./frameRewards');
+const { nombreVisible }    = require('./displayName');
 
 /** Lunes 00:00 UTC de la semana que contiene a `fecha`. */
 const inicioSemanaDe = (fecha) => {
@@ -63,7 +64,7 @@ const cerrarSemana = async (inicioSemana) => {
 
         const user = await User.findById(
             userId,
-            'username semanasTop1 rachaTop3 ultimaSemanaTop3 active'
+            'username displayName semanasTop1 rachaTop3 ultimaSemanaTop3 active'
         );
         if (!user || !user.active) continue;
 
@@ -96,6 +97,7 @@ const cerrarSemana = async (inicioSemana) => {
         snapshot.push({
             userId,
             username: user.username,
+            displayName: nombreVisible(user),
             position: posicion,
             xpSemana: filas[i].xpSemana,
         });

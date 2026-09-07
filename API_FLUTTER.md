@@ -22,18 +22,34 @@ POST /api/auth/register
 {
   "username": "daniel",
   "email": "daniel@gmail.com",
-  "password": "123456"
+  "password": "123456",
+  "utcOffsetMin": -300
 }
 ```
+> **`utcOffsetMin`** (opcional pero recomendado): zona horaria del dispositivo en minutos — en Dart `DateTime.now().timeZoneOffset.inMinutes` (Colombia: `-300`). Se acepta en **register, login, google** (body) y **renew** (query). El backend la usa para saber cuándo empieza el "día" del usuario: sin ella, la racha y el tope diario de XP se cortaban a las 7 pm hora Colombia (medianoche UTC). Si no se envía, se asume Colombia.
+
 **Respuesta:**
 ```json
 {
   "ok": true,
   "token": "<jwt>",
-  "user": { "uid": "...", "username": "daniel", "email": "...", "role": "user", "plan": "free", "avatar": "" }
+  "user": {
+    "uid": "...",
+    "username": "daniel",
+    "displayName": "daniel",
+    "proximoCambioNombre": null,
+    "email": "...",
+    "role": "user",
+    "plan": "free",
+    "avatar": "",
+    "cursoActivo": null
+  }
 }
 ```
 > El token tiene una duración de 2h. Guardarlo localmente para usarlo en el header de los endpoints protegidos.
+
+> **`username` vs `displayName`:** `username` es el identificador único e inmutable (para usuarios de Google se genera solo, ej. `saraymosquera`). **En la app se muestra siempre `displayName`**, nunca `username`. `displayName` ya llega resuelto: si el usuario no ha elegido un nombre, es igual a `username` — Flutter no tiene que hacer ningún fallback. Se cambia con `PUT /api/auth/display-name` (ver abajo).
+> `proximoCambioNombre` → fecha ISO a partir de la cual puede volver a cambiar el nombre; `null` = puede cambiarlo ahora.
 
 ---
 
@@ -72,13 +88,52 @@ POST /api/auth/google
 
 ### Renovar token
 ```
-GET /api/auth/renew
+GET /api/auth/renew?utcOffsetMin=-300
 ```
 **Header:** `Authorization: Bearer <token>` (requerido)
 
 **Respuesta:** igual que register — devuelve un token nuevo.
 
-> Llamar antes de que expire el token (cada ~1h45min) para mantener la sesión activa sin pedir login de nuevo.
+> Llamar antes de que expire el token (cada ~1h45min) para mantener la sesión activa sin pedir login de nuevo. Como se llama en cada arranque, es donde se refresca `utcOffsetMin` (por si el usuario cambió de zona horaria).
+
+---
+
+### Cambiar nombre visible
+```
+PUT /api/auth/display-name
+```
+**Header:** `Authorization: Bearer <token>` (requerido)
+
+**Body:**
+```json
+{
+  "displayName": "Saray Mosquera"
+}
+```
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "msg": "Nombre actualizado.",
+  "user": { "...igual que register, con el displayName nuevo y proximoCambioNombre actualizado..." }
+}
+```
+
+Cambia solo el nombre que se muestra (`displayName`). El `username` no se toca. El nombre nuevo aparece de inmediato en dashboard, ranking y perfil público — no hay que llamar a nada más.
+
+**Reglas** (las valida el servidor; en Flutter conviene reflejarlas en el campo de texto):
+- 3 a 20 caracteres. Se recortan espacios al inicio/final y se colapsan los espacios repetidos.
+- Solo letras (con tildes y ñ), números, espacios y `_ . -`.
+- No puede contener enlaces ni palabras reservadas (`admin`, `soporte`, `oficial`, `moderador`...).
+- **Se puede cambiar una vez cada 7 días.** El primer cambio siempre está permitido.
+
+**Errores:**
+| Código | Cuándo | Respuesta |
+|---|---|---|
+| `400` | Nombre inválido o igual al actual | `{ "ok": false, "msg": "El nombre debe tener entre 3 y 20 caracteres." }` |
+| `403` | Aún no pasaron los 7 días | `{ "ok": false, "msg": "Solo puedes cambiar tu nombre una vez cada 7 días.", "proximoCambioNombre": "2026-09-12T23:18:24.661Z" }` |
+
+> En la pantalla de configuración: si `user.proximoCambioNombre` viene con fecha, mostrar el campo deshabilitado con "Podrás cambiarlo el <fecha>". Si viene `null`, habilitado.
 
 ---
 
@@ -370,9 +425,16 @@ GET /api/user-stats/dashboard
   "ok": true,
   "user": {
     "username": "daniel",
+    "displayName": "Dany",
     "avatar": "https://...",
     "currentStreak": 5,
-    "maxStreak": 12
+    "maxStreak": 12,
+    "marcoEquipado": null
+  },
+  "racha": {
+    "jugoHoy": false,
+    "enRiesgo": true,
+    "expiraEn": "2026-09-09T05:00:00.000Z"
   },
   "progreso": {
     "nivel": 7,
@@ -393,6 +455,13 @@ GET /api/user-stats/dashboard
   }
 }
 ```
+
+**Sobre la racha:**
+- `user.currentStreak` es la **racha real**: viene `0` si ya se perdió, aunque el usuario no haya vuelto a jugar. Los días se cuentan en la zona horaria del dispositivo (`utcOffsetMin`).
+- `racha.jugoHoy` → si ya hizo un intento hoy.
+- `racha.enRiesgo` → tiene racha viva pero hoy no ha jugado. Pintar la llama apagada / avisar.
+- `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes. `null` si no tiene racha.
+- La app usa `currentStreak` + `jugoHoy` para programar los **recordatorios locales** (`StreakReminderService`): 20:00 hora local hoy si está en riesgo, y mañana/pasado por si no vuelve a abrir la app. Se reprograman en cada carga del dashboard, sin servidor.
 
 ---
 
@@ -494,6 +563,7 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
       "position": 1,
       "uid": "664a1f...",
       "username": "maria",
+      "displayName": "María G.",
       "avatar": "https://...",
       "nivel": 23,
       "rango": "Conocedor",
@@ -506,6 +576,7 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
     "position": 14,
     "uid": "664b2a...",
     "username": "daniel",
+    "displayName": "Dany",
     "avatar": "",
     "nivel": 7,
     "rango": "Aprendiz",
@@ -514,16 +585,17 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
     "esMiPosicion": true
   },
   "vecinos": [
-    { "position": 12, "uid": "664c3b...", "username": "carlos", "nivel": 9, "rango": "Aprendiz", "xpSemana": 415, "quizzes": 7, "esMiPosicion": false },
-    { "position": 13, "uid": "664d4c...", "username": "ana", "nivel": 8, "rango": "Aprendiz", "xpSemana": 400, "quizzes": 6, "esMiPosicion": false },
-    { "position": 15, "uid": "664e5d...", "username": "luis", "nivel": 6, "rango": "Aprendiz", "xpSemana": 350, "quizzes": 5, "esMiPosicion": false }
+    { "position": 12, "uid": "664c3b...", "username": "carlos", "displayName": "carlos", "nivel": 9, "rango": "Aprendiz", "xpSemana": 415, "quizzes": 7, "esMiPosicion": false },
+    { "position": 13, "uid": "664d4c...", "username": "ana", "displayName": "Ana Pérez", "nivel": 8, "rango": "Aprendiz", "xpSemana": 400, "quizzes": 6, "esMiPosicion": false },
+    { "position": 15, "uid": "664e5d...", "username": "luis", "displayName": "luis", "nivel": 6, "rango": "Aprendiz", "xpSemana": 350, "quizzes": 5, "esMiPosicion": false }
   ]
 }
 ```
 **Cómo mostrarlo en Flutter:**
 - `top` → lista con los 3 primeros destacados (mayor tamaño y aro dorado/plata/bronce) + el resto en tamaño uniforme.
 - `yo` → posición fija del usuario (viene `null` si aún no ganó XP esta semana — mostrar "¡Juega un quiz para entrar al ranking!").
-- `vecinos` → los rivales directos (2 arriba y 2 abajo). Ideal para mensajes tipo *"Te faltan 35 XP para alcanzar a @carlos"* (`vecinos` arriba tuyo tienen `position` menor).
+- `vecinos` → los rivales directos (2 arriba y 2 abajo). Ideal para mensajes tipo *"Te faltan 35 XP para alcanzar a Ana Pérez"* (`vecinos` arriba tuyo tienen `position` menor).
+- **Mostrar siempre `displayName`**, nunca `username`. Como no es único, dos jugadores pueden tener el mismo `displayName` — el `uid` es lo que los distingue.
 - Con `semana.fin` se puede mostrar la cuenta regresiva ("El ranking cierra en 2 días").
 - `uid` → id del jugador: se usa para abrir su **perfil público** al tocar la fila (ver endpoint siguiente).
 
@@ -546,9 +618,11 @@ El `uid` sale de cualquier fila del ranking semanal. Sirve para abrir el perfil 
   "user": {
     "uid": "664a1f...",
     "username": "maria",
+    "displayName": "María G.",
     "avatar": "https://...",
     "currentStreak": 12,
-    "maxStreak": 30
+    "maxStreak": 30,
+    "marcoEquipado": null
   },
   "progreso": {
     "nivel": 23,

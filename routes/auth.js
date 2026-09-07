@@ -3,7 +3,14 @@ const { check, param } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT } = require('../middlewares/validar-jwt');
 const { validarAdmin } = require('../middlewares/validar-admin');
-const { register, login, googleLogin, renovarToken, cambiarPlan } = require('../controllers/auth');
+const {
+    register,
+    login,
+    googleLogin,
+    renovarToken,
+    cambiarPlan,
+    cambiarDisplayName,
+} = require('../controllers/auth');
 
 const router = Router();
 
@@ -30,6 +37,14 @@ router.post('/google', [
 
 // GET /api/auth/renew  (token requerido)
 router.get('/renew', validarJWT, renovarToken);
+
+// PUT /api/auth/display-name  (token requerido) — cambia el nombre visible del usuario.
+// La validación de formato/longitud vive en helpers/displayName.js.
+router.put('/display-name', [
+    validarJWT,
+    check('displayName', 'El nombre es requerido').isString().notEmpty(),
+    validarCampos,
+], cambiarDisplayName);
 
 // PUT /api/auth/plan/:userId  (solo admin) — cambia el plan free/pro de un usuario
 router.put('/plan/:userId', [

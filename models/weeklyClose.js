@@ -37,6 +37,8 @@ const WeeklyCloseSchema = new Schema(
                 _id:      false,
                 userId:   { type: Schema.Types.ObjectId, ref: 'User' },
                 username: String,
+                // Nombre visible en el momento del cierre (el label puede cambiar después)
+                displayName: String,
                 position: Number,
                 xpSemana: Number,
             },

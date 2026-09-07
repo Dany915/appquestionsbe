@@ -2,6 +2,8 @@ const { Schema, model } = require('mongoose');
 
 const UserSchema = new Schema(
     {
+        // Identificador único e inmutable. Nunca se muestra en la app:
+        // lo que se ve es displayName (o este si displayName es null).
         username: {
             type: String,
             required: true,
@@ -9,6 +11,21 @@ const UserSchema = new Schema(
             trim: true,
             minlength: 3,
             maxlength: 30,
+        },
+
+        // Nombre visible (label). No es único y el usuario puede cambiarlo.
+        // null = se muestra el username. Ver helpers/displayName.js.
+        displayName: {
+            type: String,
+            default: null,
+            trim: true,
+            maxlength: 20,
+        },
+
+        // Último cambio de displayName — controla la espera entre cambios
+        displayNameChangedAt: {
+            type: Date,
+            default: null,
         },
 
         email: {
@@ -71,6 +88,14 @@ const UserSchema = new Schema(
         lastAttemptDate: {
             type: Date,
             default: null,
+        },
+
+        // Offset de la zona horaria del dispositivo en minutos (Colombia: -300).
+        // Lo manda la app en login/renew. Define dónde empieza el "día" del
+        // usuario para la racha y el tope diario de XP. Ver helpers/diaLocal.js
+        utcOffsetMin: {
+            type: Number,
+            default: -300,
         },
 
         // ─── Sistema de niveles ────────────────────────────────────────────

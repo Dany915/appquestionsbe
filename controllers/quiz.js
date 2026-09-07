@@ -4,6 +4,7 @@ const Attempt   = require('../models/attempt');
 const Topic     = require('../models/topic');
 const User      = require('../models/user');
 const { calcularXpQuiz, otorgarXp } = require('../helpers/leveling');
+const { estadoRacha } = require('../helpers/racha');
 const {
     evaluarMarcosRacha,
     evaluarMarcosPrimerQuiz,
@@ -93,7 +94,7 @@ const fetchPreguntasConFallback = async (topicIds, nivelInicial, count, nivelMax
 
 /**
  * Actualiza currentStreak y maxStreak del usuario al guardar un intento.
- * Reglas:
+ * Reglas (los días se cuentan en la zona horaria del usuario):
  *   - Si ya hizo un intento hoy → racha no cambia (ya se contó)
  *   - Si el último intento fue ayer → se extiende la racha
  *   - Si pasó más de un día → se reinicia a 1
@@ -105,30 +106,15 @@ const actualizarRacha = async (userId) => {
     const user = await User.findById(userId);
     if (!user) return [];
 
-    const hoy = new Date();
-    hoy.setUTCHours(0, 0, 0, 0);
+    const { jugoHoy, jugoAyer } = estadoRacha(user);
 
-    const ayer = new Date(hoy);
-    ayer.setUTCDate(ayer.getUTCDate() - 1);
-
-    let nuevaRacha = user.currentStreak;
-
-    if (!user.lastAttemptDate) {
-        nuevaRacha = 1;
-    } else {
-        const ultimoDia = new Date(user.lastAttemptDate);
-        ultimoDia.setUTCHours(0, 0, 0, 0);
-
-        if (ultimoDia.getTime() === hoy.getTime()) {
-            // Ya hizo un intento hoy: la racha no cambia, pero se revalúan los
-            // marcos por si un hito quedó sin otorgar (p. ej. tras un fallo).
-            return evaluarMarcosRacha(userId, user.currentStreak);
-        } else if (ultimoDia.getTime() === ayer.getTime()) {
-            nuevaRacha = user.currentStreak + 1;
-        } else {
-            nuevaRacha = 1; // rompió la racha
-        }
+    if (jugoHoy) {
+        // Ya hizo un intento hoy: la racha no cambia, pero se revalúan los
+        // marcos por si un hito quedó sin otorgar (p. ej. tras un fallo).
+        return evaluarMarcosRacha(userId, user.currentStreak);
     }
+
+    const nuevaRacha = jugoAyer ? user.currentStreak + 1 : 1;
 
     await User.findByIdAndUpdate(userId, {
         currentStreak:   nuevaRacha,

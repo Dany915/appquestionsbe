@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const { offsetDe, mismoDiaLocal } = require('./diaLocal');
 
 // ─── Configuración del sistema de niveles ──────────────────────────────────────
 //
@@ -174,20 +175,14 @@ const otorgarXp = async (userId, xpGanada) => {
 
     const limites = LIMITES_PLAN[user.plan] || LIMITES_PLAN.free;
 
-    // XP e intentos acumulados hoy (UTC) — se resetean al cambiar de día
-    const hoy = new Date();
-    hoy.setUTCHours(0, 0, 0, 0);
-
+    // XP e intentos acumulados hoy — se resetean al cambiar de día en la
+    // zona horaria del usuario (misma regla que la racha)
     let xpHoy       = 0;
     let intentosHoy = 0;
 
-    if (user.xpTodayDate) {
-        const ultimoDia = new Date(user.xpTodayDate);
-        ultimoDia.setUTCHours(0, 0, 0, 0);
-        if (ultimoDia.getTime() === hoy.getTime()) {
-            xpHoy       = user.xpToday;
-            intentosHoy = user.xpAttemptsToday;
-        }
+    if (user.xpTodayDate && mismoDiaLocal(user.xpTodayDate, new Date(), offsetDe(user))) {
+        xpHoy       = user.xpToday;
+        intentosHoy = user.xpAttemptsToday;
     }
 
     const sinCupoIntentos =
