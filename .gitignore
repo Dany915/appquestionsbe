@@ -1,3 +1,7 @@
 node_modules/
 .env
 .claude/
+
+# Material de trabajo: ilustraciones generadas, copias de código Flutter y
+# scripts sueltos. No es código del backend.
+output/

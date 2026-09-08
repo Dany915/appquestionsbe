@@ -139,6 +139,43 @@ const UserSchema = new Schema(
             default: null,
         },
 
+        // ─── Avatar elegido ────────────────────────────────────────────────
+        // `avatar` (arriba) es solo la foto de Google y se sigue sincronizando
+        // en cada login. Lo que el usuario ELIGE mostrar va aquí, separado,
+        // para que Google no le pise la elección. Ver helpers/avatars.js.
+        //
+        //   auto     → foto de Google si la tiene; si no, iniciales (default)
+        //   inicial  → iniciales aunque tenga foto de Google
+        //   catalogo → la ilustración indicada en avatarId
+        avatarTipo: {
+            type: String,
+            enum: ['auto', 'inicial', 'catalogo'],
+            default: 'auto',
+        },
+
+        // Id del catálogo (ej: "zorro/zorro_gafas"). Solo cuenta si
+        // avatarTipo === 'catalogo'.
+        avatarId: {
+            type: String,
+            default: null,
+        },
+
+        // Avatares no gratuitos que el usuario ha conseguido (plan pro o
+        // logros). Como los marcos: se otorgan y nunca se quitan, aunque el
+        // plan pro caduque. Los gratuitos no se guardan aquí: los tiene todo
+        // el mundo por definición.
+        avatarsDesbloqueados: {
+            type: [String],
+            default: [],
+        },
+
+        // Avatares desbloqueados que la app aún no ha celebrado (misma idea
+        // que marcosPendientesAviso).
+        avatarsPendientesAviso: {
+            type: [String],
+            default: [],
+        },
+
         // ─── Marcos de avatar ──────────────────────────────────────────────
         // Ids "tema.estilo" (ej: "volcanic.static") que el usuario ha
         // desbloqueado. Se otorgan por logros; nunca se quitan.

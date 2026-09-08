@@ -42,6 +42,8 @@ POST /api/auth/register
     "role": "user",
     "plan": "free",
     "avatar": "",
+    "avatarTipo": "inicial",
+    "avatarId": null,
     "cursoActivo": null
   }
 }
@@ -134,6 +136,82 @@ Cambia solo el nombre que se muestra (`displayName`). El `username` no se toca. 
 | `403` | Aún no pasaron los 7 días | `{ "ok": false, "msg": "Solo puedes cambiar tu nombre una vez cada 7 días.", "proximoCambioNombre": "2026-09-12T23:18:24.661Z" }` |
 
 > En la pantalla de configuración: si `user.proximoCambioNombre` viene con fecha, mostrar el campo deshabilitado con "Podrás cambiarlo el <fecha>". Si viene `null`, habilitado.
+
+---
+
+## AVATARES
+> Todos requieren `Authorization: Bearer <token>`.
+
+El usuario elige qué mostrar como avatar: su **foto de Google**, sus **iniciales** o una **ilustración del catálogo**. Las ilustraciones viven en la app (`assets/avatar/`); el backend solo guarda el id.
+
+**Cómo pintar un avatar.** Todas las respuestas que llevan usuario (login, renew, dashboard, ranking, perfil público) traen los mismos tres campos, **ya resueltos** — la app no decide nada:
+
+| Campo | Valores | Qué pintar |
+|---|---|---|
+| `avatarTipo` | `google` · `inicial` · `catalogo` | de dónde sale el avatar |
+| `avatar` | URL o `""` | la foto de Google, solo cuando `avatarTipo` es `google` |
+| `avatarId` | `"zorro/zorro_gafas"` o `null` | la ilustración, solo cuando `avatarTipo` es `catalogo` |
+
+El id es la ruta del archivo dentro de `assets/avatar/` sin extensión: `avatarId: "zorro/zorro_gafas"` → `Image.asset('assets/avatar/zorro/zorro_gafas.webp')`. Si la app recibe un id que no tiene (usuario con una versión más nueva), debe caer a las iniciales.
+
+> `avatar` conserva el significado de siempre (URL de Google o vacío), así las versiones de la app que no conocen `avatarId` siguen funcionando: ven foto o iniciales.
+
+### Mis avatares
+```
+GET /api/avatars
+```
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "avatar": "",
+  "avatarTipo": "catalogo",
+  "avatarId": "zorro/zorro_gafas",
+  "fotoGoogle": "https://lh3.googleusercontent.com/...",
+  "desbloqueados": [],
+  "pendientes": [],
+  "categorias": { "zorro": "Zorro", "gato": "Gato rosa" },
+  "catalogo": [
+    { "id": "zorro/zorro_default", "nombre": "Zorro",      "categoria": "zorro", "acceso": "free",  "disponible": true },
+    { "id": "zorro/zorro_gafas",   "nombre": "Zorro cool", "categoria": "zorro", "acceso": "logro", "condicion": "Próximamente", "disponible": true },
+    { "id": "gato/gatorosa_default", "nombre": "Gato rosa", "categoria": "gato", "acceso": "free",  "disponible": true },
+    { "id": "gato/gatorosa_gorra", "nombre": "Gato con gorra", "categoria": "gato", "acceso": "logro", "condicion": "Próximamente", "disponible": false }
+  ]
+}
+```
+- `avatar` / `avatarTipo` / `avatarId` → lo que lleva puesto ahora, igual que en el resto de endpoints.
+- `fotoGoogle` → la foto de Google aunque no la lleve puesta. Si viene vacía, el selector no ofrece la opción "Mi foto de Google".
+- `catalogo` → todos los avatares, agrupados por `categoria` (el título de cada grupo está en `categorias`). `disponible: false` → se muestra en gris con su `condicion`. Hoy solo los `default` de cada personaje son gratuitos (`zorro_default`, `gatorosa_default`, `dragon_default_01`, `dragon_default_02`); el resto son desbloqueables y traen `condicion: "Próximamente"` hasta que tengan logro asignado.
+- `acceso` → `free` (todos), `pro` (se otorga al activar el plan pro) o `logro`. Lo desbloqueado **no se quita nunca**, aunque el plan caduque.
+- `pendientes` → avatares recién desbloqueados que aún no se han celebrado. Tras mostrarlos, llamar a `POST /api/avatars/vistos`.
+
+### Cambiar avatar
+```
+PUT /api/avatars/equipar
+```
+**Body:**
+```json
+{ "avatarTipo": "catalogo", "avatarId": "zorro/zorro_gafas" }
+```
+| `avatarTipo` | Qué hace | `avatarId` |
+|---|---|---|
+| `auto` | Foto de Google si la tiene; si no, iniciales. Es el estado inicial de todo usuario. | se ignora |
+| `inicial` | Iniciales, aunque tenga foto de Google | se ignora |
+| `catalogo` | La ilustración indicada | requerido |
+
+**Respuesta:**
+```json
+{ "ok": true, "msg": "Avatar actualizado.", "avatar": "", "avatarTipo": "catalogo", "avatarId": "zorro/zorro_gafas" }
+```
+Los tres campos vienen resueltos: con ellos se actualiza el usuario en memoria sin volver a llamar a nada. El cambio se ve al instante en dashboard, ranking y perfil público.
+
+**Errores:** `400` avatar inexistente o `avatarTipo` inválido · `403` avatar no desbloqueado (`{ "msg": "Aún no has desbloqueado ese avatar." }`).
+
+### Marcar avisos como vistos
+```
+POST /api/avatars/vistos
+```
+**Body:** `{ "avatars": ["gato/gatorosa_gafas"] }` — sin body vacía toda la cola. Igual que `POST /api/frames/vistos`.
 
 ---
 
@@ -427,6 +505,8 @@ GET /api/user-stats/dashboard
     "username": "daniel",
     "displayName": "Dany",
     "avatar": "https://...",
+    "avatarTipo": "google",
+    "avatarId": null,
     "currentStreak": 5,
     "maxStreak": 12,
     "marcoEquipado": null
@@ -564,7 +644,9 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
       "uid": "664a1f...",
       "username": "maria",
       "displayName": "María G.",
-      "avatar": "https://...",
+      "avatar": "",
+      "avatarTipo": "catalogo",
+      "avatarId": "zorro/zorro_gafas",
       "nivel": 23,
       "rango": "Conocedor",
       "xpSemana": 1240,
@@ -578,6 +660,8 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
     "username": "daniel",
     "displayName": "Dany",
     "avatar": "",
+    "avatarTipo": "inicial",
+    "avatarId": null,
     "nivel": 7,
     "rango": "Aprendiz",
     "xpSemana": 380,
@@ -619,7 +703,9 @@ El `uid` sale de cualquier fila del ranking semanal. Sirve para abrir el perfil 
     "uid": "664a1f...",
     "username": "maria",
     "displayName": "María G.",
-    "avatar": "https://...",
+    "avatar": "",
+    "avatarTipo": "catalogo",
+    "avatarId": "gato/gatorosa_gorra",
     "currentStreak": 12,
     "maxStreak": 30,
     "marcoEquipado": null

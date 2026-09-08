@@ -11,6 +11,7 @@ const {
     DIAS_ENTRE_CAMBIOS,
 } = require('../helpers/displayName');
 const { parsearOffset } = require('../helpers/diaLocal');
+const { avatarVisible } = require('../helpers/avatars');
 
 // ─── Configuración ────────���────────────────────────────────────────────────────
 
@@ -75,7 +76,9 @@ const formatearUsuario = (user) => ({
     email:    user.email,
     role:     user.role,
     plan:     user.plan || 'free',
-    avatar:   user.avatar,
+    // avatar (URL o ''), avatarTipo y avatarId ya resueltos: la app pinta lo
+    // que le llega sin tener que decidir nada. Ver helpers/avatars.js.
+    ...avatarVisible(user),
     // Curso en el que está estudiando: la app entra directo a sus módulos
     // sin volver a preguntar. null = aún no ha elegido ninguno.
     cursoActivo: user.cursoActivo || null,

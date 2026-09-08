@@ -5,6 +5,7 @@ const { progresoNivel } = require('../helpers/leveling');
 const { cerrarSemanasPendientes } = require('../helpers/weeklyClose');
 const { nombreVisible } = require('../helpers/displayName');
 const { estadoRacha }   = require('../helpers/racha');
+const { avatarVisible } = require('../helpers/avatars');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -85,7 +86,7 @@ const dashboard = async (req, res) => {
     try {
         const [user, resumen, nivelFavorito] = await Promise.all([
 
-            User.findById(userId, 'username displayName avatar currentStreak maxStreak lastAttemptDate utcOffsetMin xp marcoEquipado'),
+            User.findById(userId, 'username displayName avatar avatarTipo avatarId currentStreak maxStreak lastAttemptDate utcOffsetMin xp marcoEquipado'),
 
             resumenGeneral(userId),
 
@@ -111,7 +112,8 @@ const dashboard = async (req, res) => {
             user: {
                 username:      user.username,
                 displayName:   nombreVisible(user),
-                avatar:        user.avatar,
+                // avatar, avatarTipo y avatarId ya resueltos (helpers/avatars.js)
+                ...avatarVisible(user),
                 // Racha real: 0 si ya la perdió aunque la BD guarde la vieja
                 currentStreak: racha.rachaEfectiva,
                 maxStreak:     user.maxStreak,
@@ -296,7 +298,7 @@ const perfilPublico = async (req, res) => {
 
     try {
         const [user, resumen, porNivelStats] = await Promise.all([
-            User.findById(userId, 'username displayName avatar currentStreak maxStreak lastAttemptDate utcOffsetMin xp active marcoEquipado'),
+            User.findById(userId, 'username displayName avatar avatarTipo avatarId currentStreak maxStreak lastAttemptDate utcOffsetMin xp active marcoEquipado'),
             resumenGeneral(userId),
             statsPorNivel(userId),
         ]);
@@ -313,7 +315,8 @@ const perfilPublico = async (req, res) => {
                 uid:           user._id,
                 username:      user.username,
                 displayName:   nombreVisible(user),
-                avatar:        user.avatar,
+                // avatar, avatarTipo y avatarId ya resueltos (helpers/avatars.js)
+                ...avatarVisible(user),
                 currentStreak: estadoRacha(user).rachaEfectiva,
                 maxStreak:     user.maxStreak,
                 marcoEquipado: user.marcoEquipado || null,
@@ -395,7 +398,7 @@ const rankingSemanal = async (req, res) => {
         const ids      = [...indices].map(i => filas[i]._id);
         const usuarios = await User.find(
             { _id: { $in: ids }, active: true },
-            'username displayName avatar xp marcoEquipado'
+            'username displayName avatar avatarTipo avatarId xp marcoEquipado'
         );
         const porId    = new Map(usuarios.map(u => [String(u._id), u]));
 
@@ -412,7 +415,7 @@ const rankingSemanal = async (req, res) => {
                 uid:          String(f._id),
                 username:     u?.username || 'Usuario',
                 displayName:  nombreVisible(u),
-                avatar:       u?.avatar   || '',
+                ...avatarVisible(u),
                 marcoEquipado: u?.marcoEquipado || null,
                 nivel:        prog.nivel,
                 rango:        prog.rango,
