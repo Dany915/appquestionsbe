@@ -4,21 +4,16 @@ const WeeklyClose = require('../models/weeklyClose');
 const { otorgarMarcos }    = require('./frames');
 const { marcosPorRanking } = require('./frameRewards');
 const { nombreVisible }    = require('./displayName');
-
-/** Lunes 00:00 UTC de la semana que contiene a `fecha`. */
-const inicioSemanaDe = (fecha) => {
-    const d = new Date(fecha);
-    d.setUTCHours(0, 0, 0, 0);
-    const diff = (d.getUTCDay() + 6) % 7; // lunes = 0
-    d.setUTCDate(d.getUTCDate() - diff);
-    return d;
-};
+const { idSemanaDe, ventanaSemana, idSemanaAnterior } = require('./semana');
 
 /** Cuántos usuarios del top se premian como máximo. */
 const TOP_PREMIADO = 10;
 
 /**
  * Cierra una semana concreta y reparte los marcos del ranking.
+ *
+ * `inicioSemana` es el id de la semana (ver `semana.js`), no el instante en
+ * el que abre: la ventana real de intentos la da `ventanaSemana`.
  *
  * Concurrencia: el índice único de `inicioSemana` hace de cerrojo. Si dos
  * peticiones intentan cerrar la misma semana a la vez, solo una consigue crear
@@ -28,8 +23,7 @@ const TOP_PREMIADO = 10;
  * @returns {Promise<boolean>} true si esta llamada fue la que cerró la semana
  */
 const cerrarSemana = async (inicioSemana) => {
-    const fin = new Date(inicioSemana);
-    fin.setUTCDate(fin.getUTCDate() + 7);
+    const { inicio, fin } = ventanaSemana(inicioSemana);
 
     let cierre;
     try {
@@ -47,7 +41,7 @@ const cerrarSemana = async (inicioSemana) => {
     const filas = await Attempt.aggregate([
         {
             $match: {
-                createdAt: { $gte: inicioSemana, $lt: fin },
+                createdAt: { $gte: inicio, $lt: fin },
                 xpGanada:  { $gt: 0 },
             },
         },
@@ -74,8 +68,7 @@ const cerrarSemana = async (inicioSemana) => {
         let rachaTop3 = user.rachaTop3 || 0;
         if (posicion <= 3) {
             // Consecutiva solo si la última vez fue justo la semana anterior
-            const anterior = new Date(inicioSemana);
-            anterior.setUTCDate(anterior.getUTCDate() - 7);
+            const anterior = idSemanaAnterior(inicioSemana);
             const ultima = user.ultimaSemanaTop3
                 ? new Date(user.ultimaSemanaTop3).getTime()
                 : null;
@@ -119,21 +112,20 @@ const cerrarSemana = async (inicioSemana) => {
  * Solo mira las últimas `maxSemanas` para no recorrer el histórico completo.
  */
 const cerrarSemanasPendientes = async (maxSemanas = 4) => {
-    const semanaActual = inicioSemanaDe(new Date());
+    const semanaActual = idSemanaDe(new Date());
     const cerradas = [];
 
     for (let i = 1; i <= maxSemanas; i++) {
-        const inicio = new Date(semanaActual);
-        inicio.setUTCDate(inicio.getUTCDate() - 7 * i);
+        const id = idSemanaAnterior(semanaActual, i);
 
-        const yaExiste = await WeeklyClose.exists({ inicioSemana: inicio });
+        const yaExiste = await WeeklyClose.exists({ inicioSemana: id });
         if (yaExiste) break; // al encontrar una cerrada, las previas también lo están
 
-        const cerrada = await cerrarSemana(inicio);
-        if (cerrada) cerradas.push(inicio);
+        const cerrada = await cerrarSemana(id);
+        if (cerrada) cerradas.push(id);
     }
 
     return cerradas;
 };
 
-module.exports = { inicioSemanaDe, cerrarSemana, cerrarSemanasPendientes };
+module.exports = { cerrarSemana, cerrarSemanasPendientes };

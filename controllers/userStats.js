@@ -6,6 +6,7 @@ const { cerrarSemanasPendientes } = require('../helpers/weeklyClose');
 const { nombreVisible } = require('../helpers/displayName');
 const { estadoRacha }   = require('../helpers/racha');
 const { avatarVisible } = require('../helpers/avatars');
+const { idSemanaDe, ventanaSemana } = require('../helpers/semana');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -338,18 +339,11 @@ const perfilPublico = async (req, res) => {
     }
 };
 
-// Lunes 00:00 UTC de la semana actual
-const inicioSemanaUTC = () => {
-    const d = new Date();
-    d.setUTCHours(0, 0, 0, 0);
-    const diff = (d.getUTCDay() + 6) % 7; // lunes = 0, domingo = 6
-    d.setUTCDate(d.getUTCDate() - diff);
-    return d;
-};
-
 /**
  * GET /api/user-stats/ranking-semanal?limit=10
- * Ranking de XP ganada esta semana (lunes a domingo, UTC). Se reinicia cada lunes.
+ * Ranking de XP ganada esta semana. Va de lunes 00:00 a domingo 24:00 en la
+ * hora de referencia de la app (ver `helpers/semana.js`), así que se reinicia
+ * el lunes a medianoche y no el domingo a las 7 pm.
  *
  * Retorna:
  *   - top:     los mejores N de la semana (podio)
@@ -367,13 +361,11 @@ const rankingSemanal = async (req, res) => {
             (err) => console.error('Error cerrando semanas pendientes:', err)
         );
 
-        const inicio = inicioSemanaUTC();
-        const fin    = new Date(inicio);
-        fin.setUTCDate(fin.getUTCDate() + 7);
+        const { inicio, fin } = ventanaSemana(idSemanaDe());
 
         // XP semanal por usuario, ordenada de mayor a menor
         const filas = await Attempt.aggregate([
-            { $match: { createdAt: { $gte: inicio }, xpGanada: { $gt: 0 } } },
+            { $match: { createdAt: { $gte: inicio, $lt: fin }, xpGanada: { $gt: 0 } } },
             {
                 $group: {
                     _id:      '$userId',
