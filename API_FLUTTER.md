@@ -272,6 +272,98 @@ GET /api/topic?moduleTag=modulo_1
 
 ---
 
+## LECTURAS
+
+Material de estudio para leer dentro de la app (ej: el texto de una norma), asociado a uno o varios temas. **Son gratuitas**: nunca van tras el plan Pro. Se cargan con `scripts/importarLectura.js`, no por API.
+
+### Listar lecturas de un módulo o de un tema
+```
+GET /api/lectura?cursoTag=sena&moduleTag=modulo_2
+GET /api/lectura?topicTag=mod_2_und_tec_sena
+```
+Requiere token. `cursoTag` es obligatorio junto a `moduleTag` (hay módulos homónimos en distintos cursos).
+
+**Respuesta** (sin contenido):
+```json
+{
+  "ok": true,
+  "count": 1,
+  "lecturas": [
+    {
+      "lecturaTag": "sena_acuerdo_12_1985",
+      "titulo": "Acuerdo N° 12 de 1985",
+      "descripcion": "Lineamientos de la política técnico-pedagógica del SENA…",
+      "orden": 1,
+      "temas": [{ "topicTag": "mod_2_und_tec_sena", "label": "Unidad Técnica SENA" }],
+      "totalSecciones": 8,
+      "totalPalabras": 4974,
+      "minutosLectura": 28,
+      "totalPreguntas": 0,
+      "version": 1,
+      "updatedAt": "2026-09-13T21:10:15.572Z"
+    }
+  ]
+}
+```
+> `totalPreguntas` son las preguntas activas de sus temas: con `0` no ofrecer "Hacer quiz". `version` sube cada vez que cambia el contenido.
+
+---
+
+### Obtener una lectura completa
+```
+GET /api/lectura/:lecturaTag
+```
+Requiere token. Devuelve lo mismo que el listado más `fuentes`, `consultado`, `vigencia`, `aviso` y `secciones` (≈ 48 KB el Acuerdo 12). La app la pide una vez y navega entre secciones en local.
+
+```json
+{
+  "ok": true,
+  "lectura": {
+    "lecturaTag": "sena_acuerdo_12_1985",
+    "fuentes": [{ "nombre": "SENA, «Unidad técnica: normas» (1986)…", "url": "https://hdl.handle.net/11404/1751" }],
+    "consultado": "2026-09-13",
+    "vigencia": { "estado": "modificada", "nota": "Norma de 1985. Fue modificada tácitamente…" },
+    "aviso": "QLearning es un proyecto independiente de estudio…",
+    "secciones": [
+      {
+        "slug": "cap-1",
+        "orden": 2,
+        "titulo": "Fundamentos de la Formación Profesional Integral",
+        "rango": "Capítulo I · Arts. 1–7",
+        "palabras": 782,
+        "minutos": 4,
+        "bloques": [
+          { "tipo": "encabezado", "nivel": 1, "texto": "Capítulo I" },
+          { "tipo": "articulo", "ancla": "art-3", "numero": "3°", "epigrafe": "Objetivos…", "texto": "" },
+          { "tipo": "parrafo", "texto": "Los objetivos… son:", "nivel": 0 },
+          { "tipo": "item", "marca": "1.", "texto": "El Aprender a Aprender…", "nivel": 0 },
+          { "tipo": "paragrafo", "marca": "Parágrafo:", "texto": "", "nivel": 1 },
+          { "tipo": "firmas", "firmantes": [{ "nombre": "ANTONIO DIAZ GARCIA", "cargos": ["Presidente del Consejo"] }] },
+          { "tipo": "nota", "texto": "Nota editorial (no es parte de la norma)" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Tipos de bloque:**
+| tipo | campos | uso |
+|---|---|---|
+| `encabezado` | `nivel` (1 ó 2), `texto` | 1 = "Capítulo I", 2 = nombre del capítulo |
+| `parrafo` | `texto`, `nivel` | `nivel` = sangría (pertenece al numeral de arriba) |
+| `item` | `marca`, `texto`, `nivel` | elemento de lista con su marca original (`1.`, `1°`, `a.`, `-`) — no renumerar |
+| `articulo` | `ancla`, `numero`, `epigrafe`, `texto` | se pinta "Artículo {numero} {epigrafe}"; `texto` puede venir vacío |
+| `paragrafo` | `marca`, `texto`, `nivel` | los elementos que le siguen con más `nivel` le pertenecen |
+| `firmas` | `firmantes[{nombre, cargos[]}]` | |
+| `nota` | `texto` | editorial, se pinta distinto |
+
+> **Ignorar los tipos desconocidos** (o pintarlos como párrafo si traen `texto`): así se pueden añadir tipos sin romper versiones viejas de la app.
+
+> El texto de la norma es literal. `aviso` y `vigencia.nota` deben mostrarse junto a la lectura; `fuentes` con su enlace.
+
+---
+
 ## QUIZ
 
 ### Generar quiz
@@ -537,11 +629,13 @@ GET /api/user-stats/dashboard
 ```
 
 **Sobre la racha:**
+- La racha cuenta **días activos** con **3 días de gracia** (`DIAS_GRACIA` en `helpers/racha.js`): si entre un día con intentos y el siguiente pasan 3 días o menos, suma 1; si pasan más, reinicia a 1. Ej: juega el día 1 → 1; vuelve el día 4 → 2; vuelve el día 9 → 1.
 - `user.currentStreak` es la **racha real**: viene `0` si ya se perdió, aunque el usuario no haya vuelto a jugar. Los días se cuentan en la zona horaria del dispositivo (`utcOffsetMin`).
-- `racha.jugoHoy` → si ya hizo un intento hoy.
-- `racha.enRiesgo` → tiene racha viva pero hoy no ha jugado. Pintar la llama apagada / avisar.
-- `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes. `null` si no tiene racha.
-- La app usa `currentStreak` + `jugoHoy` para programar los **recordatorios locales** (`StreakReminderService`): 20:00 hora local hoy si está en riesgo, y mañana/pasado por si no vuelve a abrir la app. Se reprograman en cada carga del dashboard, sin servidor.
+- ⚠️ `racha.jugoHoy` → **no significa "jugó hoy"**: es `true` si hoy no necesita jugar para conservar la racha (jugó hoy o le quedan días de gracia después de hoy). Se mantiene con ese nombre para que los recordatorios de la versión actual de la app funcionen con la gracia sin publicar otra versión.
+- `racha.enRiesgo` → tiene racha viva y **hoy es su último día** para conservarla. Pintar la llama apagada / avisar.
+- `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes (fin del 3.er día sin jugar). `null` si no tiene racha.
+- La app usa `currentStreak` + `jugoHoy` para programar los **recordatorios locales** (`StreakReminderService`): 20:00 hora local hoy si está en riesgo, y mañana/pasado por si no vuelve a abrir la app. Se reprograman en cada carga del dashboard, sin servidor. En la próxima versión conviene que use `enRiesgo` y `expiraEn`, y devolver `jugoHoy` a su significado literal.
+- El texto de la pantalla de instrucciones ("si dejas pasar un día entero, vuelve a empezar") quedó desactualizado: corregirlo en la próxima versión.
 
 ---
 
@@ -857,15 +951,19 @@ GET /api/user-stats/evolucion?limit=20
    ├── GET /api/topic/modulos?active=true
    └── GET /api/topic?moduleTag=modulo_1&active=true
 
-5. Jugar
+5. Estudiar (opcional)
+   ├── GET /api/lectura?cursoTag=sena&moduleTag=modulo_2
+   └── GET /api/lectura/sena_acuerdo_12_1985
+
+6. Jugar
    └── GET /api/quiz?topicTags=mod_1_ley_1105&nivel=curioso&count=10
 
-6. Terminar y calificar
+7. Terminar y calificar
    └── POST /api/quiz/calificar
 
-7. Ver ranking semanal
+8. Ver ranking semanal
    └── GET /api/user-stats/ranking-semanal
 
-8. Tocar a otro jugador del ranking
+9. Tocar a otro jugador del ranking
    └── GET /api/user-stats/perfil/:uid   (el uid viene en la fila del ranking)
 ```

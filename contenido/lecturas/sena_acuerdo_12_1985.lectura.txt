@@ -1,0 +1,355 @@
+@lectura sena_acuerdo_12_1985
+@titulo Acuerdo N° 12 de 1985
+@descripcion Lineamientos de la política técnico-pedagógica del SENA y la Unidad Técnica en la Entidad.
+@temas mod_2_und_tec_sena
+@orden 1
+@fuente SENA, «Unidad técnica: normas» (1986), Repositorio Institucional SENA | https://hdl.handle.net/11404/1751
+@fuente Compilación Jurídica del SENA — Acuerdo 12 de 1985 | https://normograma.sena.edu.co/compilacion/docs/acuerdo_sena_0012_1985.htm
+@consultado 2026-09-13
+@vigencia modificada | Norma de 1985. Fue modificada tácitamente por el Acuerdo 8 de 1997 y varios de sus artículos ya no rigen. Se incluye como material de estudio del concurso; consulta la fuente oficial para saber qué está vigente.
+@aviso QLearning es un proyecto independiente de estudio y no está afiliado al Servicio Nacional de Aprendizaje (SENA) ni a la CNSC, ni cuenta con su respaldo. El texto normativo se reproduce conforme al artículo 41 de la Ley 23 de 1982, sin alterar su contenido; solo se corrigieron errores evidentes de digitalización. La división en secciones y sus títulos son ayudas de lectura, no parte de la norma.
+
+@correccion Decreto Nο 3123 => Decreto N° 3123 | Letra griega "ο" en lugar del símbolo "°"
+@correccion Artículo 4, Formación => Artículo 4° Formación | Numeración del artículo
+@correccion Artículo 5°, Desarrollo => Artículo 5° Desarrollo | Numeración del artículo
+@correccion Artículo 6°, Fases => Artículo 6° Fases | Numeración del artículo
+@correccion ya sus productos => y a sus productos | Palabras unidas en la digitalización
+@correccion con el fin' de => con el fin de | Apóstrofo sobrante
+@correccion formación, e1 desarrollo => formación, el desarrollo | Número 1 en lugar de la letra l
+@correccion la comparación qué de manera => la comparación que de manera | Tilde sobrante
+@correccion mantendrá él sistema => mantendrá el sistema | Tilde sobrante
+@correccion registros dilige11ciados => registros diligenciados | Números en lugar de letras
+@correccion 2, Los aspectos => 2. Los aspectos | Numeración del parágrafo
+@correccion claramente los' elementos => claramente los elementos | Apóstrofo sobrante
+@correccion 2. involucrará => 2. Involucrará | Mayúscula inicial
+@correccion empresarial ya vincular => empresarial y a vincular | Palabras unidas en la digitalización
+@correccion VARGAS GlRALDO => VARGAS GIRALDO | Letra l en lugar de I
+
+@seccion preambulo | Encabezado y considerandos | Considerandos 1°–9°
+
+# ACUERDO N° 12 DE 1985
+
+Por medio del cual se establecen los lineamientos fundamentales de la política Técnico-Pedagógica del SENA y se fijan las directrices para su gestión con miras a lograr y conservar la Unidad Técnica en la Entidad.
+
+EL CONSEJO DIRECTIVO NACIONAL DEL SENA, en uso de sus atribuciones legales, en especial de las consignadas en los Literales b), d), y g), numeral 1° del Artículo 8°, del Decreto N° 3123 de 1968, y
+
+## CONSIDERANDO
+
+1° Que el SENA es un organismo que el Estado pone al servicio de la sociedad colombiana para orientar, desarrollar y apoyar tecnológica y pedagógicamente, los esfuerzos que se realizan en los diferentes estamentos de la misma, con el propósito de estructurar la Formación Profesional Integral para el trabajo productivo.
+2° Que la Formación Profesional Integral que imparte el SENA se enmarca dentro del principio de que el desarrollo económico se considera como un medio para impulsar la promoción social del trabajador como ser consciente y libre, ejercitando sus facultades para la construcción de una sociedad justa, participativa y responsable dentro de los principios cristianos que fundamentan el Decreto N° 3123 de 1968.
+3° Que corresponde al SENA captar, diseñar, aplicar y mantener actualizadas las tecnologías educativas que garanticen, a través de la Formación Profesional Integral, la adquisición de conocimientos, el descubrimiento y desarrollo de habilidades, la identificación, generación y adopción de valores y actitudes que permitan a los sujetos de formación participar consciente y creativamente en los cambios de todo orden que vive el mundo actual.
+4° Que la evolución económica y social del país ha generado en la Entidad nuevas formas de trabajo que se hace necesario analizar, validar e incorporar de manera sistemática y organizada.
+5° Que la evolución económica, política, social y tecnológica del país, exige la actualización de las normas que rigen la Formación Profesional Integral.
+6° Que la demanda de servicios de formación profesional ha llevado a la Entidad a generar diversas modalidades y estrategias de acción para mejorar su calidad y aumentar la cobertura y que frente a estos cambios, resulta imperativo establecer nuevos criterios y mecanismos comunes, que, respetando la necesaria diversidad, garanticen Unidad Técnica en la acción del SENA.
+7° Que el SENA debe establecer criterios y procedimientos comunes que le permitan ofrecer en todo lugar y tiempo una formación profesional de alta calidad, y al mismo tiempo garantizar a todas las personas igualdad de oportunidades para el acceso a ella.
+8° Que la Unidad Técnica en el SENA es el conjunto de criterios y procedimientos comunes relativos a:
+  - Fundamentos de la Formación Profesional Integral.
+  - Planeación e identificación de necesidades.
+  - Proyectos de Formación Profesional Integral.
+  - Diseño técnico-pedagógico.
+  - Proceso de enseñanza-aprendizaje y su administración.
+  - Evaluación.
+  - Formación de docentes.
+  - Instancias de coordinación.
+9° Que el Consejo Directivo Nacional es el encargado de formular la política general y los planes del SENA, controlar su funcionamiento y crear los mecanismos necesarios para el logro de sus objetivos.
+
+## ACUERDA:
+
+@seccion cap-1 | Fundamentos de la Formación Profesional Integral | Capítulo I · Arts. 1–7
+
+# Capítulo I
+## Fundamentos de la Formación Profesional Integral.
+
+@art 1° | Definición.
+La Formación Profesional Integral es el proceso mediante el cual la persona adquiere y desarrolla de manera permanente conocimientos, destrezas y aptitudes e identifica, genera y asume valores y actitudes para su realización humana y su participación activa en el trabajo productivo y en la toma de decisiones sociales.
+
+@art 2° | Principios de la Formación Profesional Integral.
+1. La aceptación de que el desarrollo de las facultades humanas se logra fundamentalmente a través del trabajo, esto es, mediante la transformación intencional que el hombre hace de su entorno físico y social.
+2. El reconocimiento del derecho y el deber del sujeto de formación de ser gestor de su propio desarrollo en todas las dimensiones.
+3. La aceptación del carácter social del conocimiento, lo cual hace imperativo que la persona formada contribuya a su vez a la construcción de una sociedad más desarrollada y justa.
+4. La vinculación estrecha y permanente con la realidad socio-económica, tanto nacional como internacional.
+5. La orientación de la Formación Profesional Integral en función de una cultura del trabajo productivo.
+6. La apertura crítica al avance tecnológico y la incorporación selectiva del mismo al proceso de enseñanza-aprendizaje.
+7. El reconocimiento de las condiciones y características específicas de las personas, empresas y comunidades usuarias de la formación profesional como determinantes de la respuesta ofrecida.
+8. La activa participación del mundo del trabajo en las acciones de formación profesional, teniendo en cuenta no sólo los conocimientos teóricos de las personas, sino las vivencias concretas de ellas en su trabajo como fuente de aprendizaje.
+9. La participación social como medio y fin de la Formación Profesional Integral.
+10. El reconocimiento de que la persona humana aprende permanentemente, en razón de su cotidiana interacción con los demás y con el medio circundante.
+11. La desescolarización entendida como la organización de las estructuras, diseños y procesos institucionales para facilitar el aprovechamiento, con fines educativos; de todos los ambientes en donde se desenvuelve el ser humano.
+12. La descentralización de la acción del SENA con el fin de que las políticas, planes y proyectos de la Entidad respondan a las características socio-económicas de cada región y población.
+13. El acercamiento al sistema educativo formal, puesto que la formación profesional y la educación formal se complementan en el propósito social de formar los recursos humanos que el país necesita.
+
+@art 3° | Objetivos de la Formación Profesional Integral.
+Los objetivos de la Formación Profesional Integral son:
+1. El Aprender a Aprender, que se orienta hacia el desarrollo de la originalidad, la creatividad, la capacidad crítica, el aprendizaje por procesos y la formación permanente.
+2. El Aprender a Hacer, en el cual se involucra ciencia, tecnología y técnica, en función de un adecuado desempeño en el mundo de la producción.
+3. El Aprender a Ser, que se orienta al desarrollo de actitudes acordes con la dignidad de la persona y con su proyección solidaria hacia los demás y hacia el mundo.
+Dada la naturaleza de la Formación Profesional Integral, el eje de la misma es el Aprender a Hacer.
+
+@art 4° | Formación para un medio laboral que evoluciona.
+Dadas las características científicas, tecnológicas y técnicas de la sociedad contemporánea, la Formación Profesional Integral capacitará a la persona, dando énfasis a la formación por familias ocupacionales y procesos productivos, para que esté en posibilidad de vincularse al trabajo y desarrollarse en él, aún en una situación laboral cambiante.
+
+@art 5° | Desarrollo técnico y pedagógico.
+Frente al actual avance tecnológico, el SENA desarrollará herramientas técnicas y pedagógicas que conviertan a la formación profesional en un factor dinámico de cambio y que faculten al usuario del SENA para captar y entender las nuevas tecnologías, adecuarlas a su realidad particular, aplicarlas, modificarlas y mejorarlas o, si fuere del caso, descartarlas; y para generar nuevas tecnologías que permitan al país reducir sus actuales niveles de dependencia.
+
+@art 6° | Fases del proceso de Formación Profesional Integral.
+El proceso de la Formación Profesional Integral comprende cuatro fases: la identificación de las tendencias socio-económicas y de las necesidades actuales de formación profesional. La estructuración de la respuesta para atender a tales necesidades. La ejecución de esa respuesta y la evaluación de las acciones.
+
+@art 7° | Perfil del egresado.
+Toda persona que participe en procesos de Formación Profesional Integral desarrollará capacidades técnicas, intelectuales, sociales y cívicas que le permitan desempeñarse productivamente en su trabajo, comprender críticamente los procesos sociales y económicos de que es partícipe y generar actitudes y valores que fortalezcan su compromiso de responsabilidad frente a sí mismo, a la comunidad, al trabajo y a su medio ecológico, dentro de los lineamientos democráticos que consagran la Constitución Nacional y las Leyes de Colombia.
+
+@seccion cap-2 | Planeación e identificación de necesidades | Capítulo II · Arts. 8–11
+
+# CAPITULO II
+## PLANEACIÓN E IDENTIFICACIÓN DE NECESIDADES.
+
+@art 8° | Características de la planeación.
+La Formación Profesional Integral contempla, en sus cuatro fases, procesos de planeación que deben inscribirse dentro de una planeación educativa, estratégica y participativa.
+1. Educativa: Porque la comprensión de los cambios del mundo productivo permite afectar en forma permanente la organización del proceso de Formación Profesional Integral desde la identificación de las necesidades hasta el desarrollo del proceso de enseñanza-aprendizaje.
+2. Estratégica: En razón a que se constituye en un proceso permanente que permite la adaptación y ajuste de los proyectos para que éstos respondan oportunamente a los cambios que ocurran en el medio externo, conservando los alcances de la política de la Institución a mediano plazo.
+3. Participativa: En la medida en que incorpora los aportes internos de las diferentes instancias de la Entidad, de la comunidad social y empresarial y del Estado, para lograr un reconocimiento más aproximado de la realidad y la vinculación a los agentes de la formación profesional en la construcción de la visión prospectiva de la Institución.
+
+@art 9° | Identificación de necesidades.
+La identificación de necesidades de formación es la fase en la cual, mediante los procesos de planeación de la Entidad, o los procesos de investigación-acción, se cuantifican y cualifican los requerimientos de Formación Profesional Integral del medio externo.
+
+@art 10° | Criterios para la identificación de necesidades.
+La identificación de necesidades considerará las demandas económicas y sociales y precisará los elementos cognoscitivos, tecnológicos, sociales, económicos, culturales, ecológicos, de organización y de gestión referidos a una población determinada de tal manera que facilite la estructuración de la respuesta institucional.
+
+@art 11. | Niveles y relaciones de la identificación de necesidades.
+La identificación de las necesidades puede hacerse a nivel nacional, regional y local, pero en cada caso deben buscarse las relaciones que estas necesidades tienen con los procesos de desarrollo del país para buscar coherencia con otras acciones del SENA o con instituciones diferentes.
+
+@seccion cap-3 | Proyectos de Formación Profesional | Capítulo III · Arts. 12–16
+
+# CAPITULO III
+## PROYECTOS DE FORMACIÓN PROFESIONAL.
+
+@art 12. | Importancia de su formulación.
+Para estructurar respuesta de formación a necesidades específicas de las poblaciones, la planeación educativa conduce a la formulación de proyectos que garanticen eficiencia, eficacia y calidad en los procesos y productos de la formación profesional identificando y priorizando las necesidades correspondientes a demandas económicas y sociales del medio, externo y analizando las disponibilidades de recursos tanto del SENA como de la comunidad.
+
+@art 13. | Definición.
+El proyecto es un instrumento de gestión que prevé y organiza acciones de planeación, técnico-pedagógicas y de administración, con el fin de resolver una necesidad de la sociedad, enmarcada en los objetivos y políticas de la Entidad. Es el instrumento que concreta la estructuración de la respuesta para atender las necesidades de la población.
+El proyecto de formación profesional debe inscribirse dentro de un proyecto de desarrollo local, regional o nacional.
+
+@art 14. | Procesos que integra el proyecto.
+El proyecto formulado a partir de la planeación e identificación de necesidades integra los siguientes procesos:
+- Diseño técnico-pedagógico.
+- Proceso de enseñanza-aprendizaje y su administración.
+- Formación de docentes.
+- Evaluación del proceso de Formación Profesional Integral.
+
+@art 15. | | El proyecto se constituye en unidad de:
+- Programación.
+- Administración.
+- Ejecución.
+- Presupuesto y costos.
+- Evaluación.
+
+@art 16. | La administración de la formación en los proyectos.
+La Formación Profesional Integral contempla en sus fases procesos administrativos que garantizan la eficiente y oportuna provisión y organización de los recursos humanos, físicos y financieros.
+Por lo tanto, los procesos administrativos en la Formación Profesional Integral serán:
+1. Flexibles: para interpretar y cumplir las normas con la agilidad que exigen las diferentes fases del proceso de formación profesional.
+2. Descentralizados: para desarrollar los mecanismos y delegaciones que permitan atender oportunamente las necesidades de los recursos requeridos en la formación profesional dentro de los criterios de racionalidad y optimización de recursos.
+3. Dinámicos: para adecuar permanentemente las estructuras organizativas y los procedimientos a los desarrollos de la Formación Profesional Integral y el trabajo por proyectos.
+4. Educativos: para garantizar que la provisión de los recursos esté de acuerdo con los requerimientos técnicos y pedagógicos de la Formación Profesional Integral y con el ambiente educativo.
+
+@seccion cap-4 | Diseño técnico-pedagógico | Capítulo IV · Arts. 17–26
+
+# CAPÍTULO IV
+## Diseño Técnico-pedagógico
+
+@art 17. | Definición.
+El diseño técnico-pedagógico es el proceso por medio del cual el SENA, en concertación con la comunidad formal e informal, estructura programas de formación profesional para dar respuesta adecuada a las necesidades de formación de las diferentes poblaciones.
+En el diseño técnico-pedagógico se determinan y articulan los elementos cognoscitivos, tecnológicos, sociales, económicos y culturales que involucra; se definen sus objetivos; se seleccionan y organizan sus contenidos tecnológicos, éticos, de organización y de gestión; se establece su estructura; se seleccionan y elaboran los medios; y se proporcionan criterios para su desarrollo y evaluación.
+
+@art 18. | El diseño y la operación.
+El diseño técnico-pedagógico se concreta en las siguientes acciones de la Entidad:
+1. El desarrollo de los proyectos locales, regionales, zonales o nacionales, según sea su cobertura geográfica y poblacional.
+2. Las investigaciones tecnológicas, pedagógicas y socio-económicas que se generen durante el proceso de formación.
+3. En la estructuración y desarrollo de las actividades de enseñanza-aprendizaje que realizan los docentes y los sujetos de formación.
+@par Parágrafo:
+  1. Toda acción de diseño técnico-pedagógico estará formulada en el marco de un proyecto de formación profesional,
+  2. Los criterios y procedimientos que aquí se plantean se aplicarán a diseños que respondan tanto a empresas y comunidades del nivel moderno, como del informal.
+
+@art 19. | Características del diseño técnico-pedagógico.
+El diseño técnico-pedagógico será integral, permanente, modular, dinámico, anticipativo, descentralizado, participativo y sistémico.
+1. Integral: porque involucra contenidos y estrategias para la apropiación por parte del alumno, de procesos cognoscitivos, tecnológicos, sociales y actitudinales.
+2. Permanente: porque constituye una actividad regular del quehacer de los docentes del SENA y hace posible la actualización continua de los contenidos, estrategias y didácticas específicas en el proceso de la Formación Profesional Integral,
+3. Modular: porque organiza la información proveniente del estudio del trabajo en unidades formativas mínimas, integrales y autosuficientes, que permiten su uso flexible de acuerdo con necesidades específicas.
+4. Dinámico: porque admite ajustes permanentes del proceso y de los productos con base en la evolución del mundo del trabajo y en los desarrollos pedagógicos.
+5. Anticipativo: porque permite prever respuestas de Formación Profesional Integral a desarrollos tecnológicos y educativos futuros.
+6. Descentralizado: porque se realiza en atención a necesidades específicas de cada región y población.
+7. Participativo: porque para el logro de sus objetivos requiere del concurso de docentes, usuarios de la formación, entidades relacionadas con la tecnología y la educación y de la comunidad.
+8. Sistémico: porque incorpora, articula y relaciona de manera permanente los elementos que intervienen en el proceso,
+
+@art 20. | Fases del diseño técnico-pedagógico.
+Para el diseño técnico-pedagógico se desarrollan de manera interdependiente las fases de estudio integral del trabajo, diseño didáctico y validación de productos.
+@par Parágrafo: | Estas fases no obedecen a una secuencia única y rígida, sino que pueden darse en forma simultánea e interrelacionada.
+
+@art 21. | Estudio integral del trabajo.
+Es la fase del diseño técnico-pedagógico en la cual se analizan los procesos productivos en relación con el medio económico y social en el que ocurren.
+Para este análisis se toman como referencia actividades económicas, familias ocupacionales, ocupaciones, puestos de trabajo, tareas, procesos productivos, áreas geográficas, comunidades o agremiaciones según el tipo de información por captar y los objetivos que para el estudio integral del trabajo se han estipulado en la formulación de los proyectos.
+El estudio integral del trabajo debe:
+1. Identificar los niveles de tecnología de producción, de gestión y de organización inherentes a los procesos productivos caracterizados.
+2. Evaluar y seleccionar las tecnologías objeto del diseño inmediato o futuro,
+3. Identificar las relaciones sociales y económicas existentes alrededor del proceso productivo.
+4. Dar elementos para identificar el perfil integral del trabajador.
+@par Parágrafo:
+  1. El estudio integral del trabajo requiere de una actualización permanente para captar la evolución de las tecnologías o el surgimiento de nuevos procesos productivos.
+  2. Para garantizar el oportuno registro, difusión y flujo de la información propia del estudio del trabajo, la Entidad dispondrá de sistemas de información.
+
+@art 22. | Diseño didáctico.
+Es el tratamiento pedagógico de la información que proviene del estudio integral del trabajo, mediante el cual se organizan las condiciones para que el sujeto de formación pueda desarrollar a cabalidad su plan de formación.
+El diseño didáctico prescribe los contenidos tecnológicos, éticos, de organización y de gestión que administrará el docente y los procesos centrales de aprendizaje que debe desarrollar el sujeto de formación. Determina las estrategias de aprendizaje más adecuadas, que faciliten el logro de los objetivos de aprendizaje establecidos, dentro del marco de la Formación Profesional Integral.
+Los productos de esta fase son estructuras pedagógicas organizadas en bloques modulares y módulos instruccionales, las didácticas específicas, materiales y medios, estructura de pruebas ocupacionales, perfil integral del docente y del sujeto de formación y guías que faciliten la relación docente – alumno - proceso de formación.
+
+@art 23. | Validación de los productos del diseño.
+Esta fase permite obtener información sobre la funcionalidad de los productos parciales y finales del proceso de diseño, verificando su eficacia a través de la prueba piloto del mismo.
+
+@art 24. | Investigación tecnológica y pedagógica.
+El diseño técnico-pedagógico requiere investigación tecnológica y pedagógica:
+1. La investigación tecnológica abarca las áreas de producción, gestión y organización; el planteamiento y la solución de problemas; y el desarrollo de nuevas tecnologías.
+  La investigación tecnológica complementará la información del estudio integral del trabajo y será permanente con el fin de actualizar el diseño.
+2. La investigación pedagógica comprende: el planteamiento de problemas encontrados en el quehacer educativo, la búsqueda de información tecnológica que ayude a la solución de los mismos, el análisis de la información sobre los procesos educativos subyacentes en las poblaciones y de las tecnologías educativas tanto del SENA como de otras entidades nacionales y extranjeras.
+
+@art 25. | Evaluación del proceso de diseño.
+Se define la evaluación del proceso de diseño como la recuperación de la información pertinente - de manera continua - referente a los procedimientos y a sus productos finales, con el fin de encontrar alternativas de ajuste.
+
+@art 26. | Participación de Regionales y Dirección General en el proceso de diseño.
+1. Serán acciones conjuntas de las Regionales y de la Dirección General:
+  a. El establecimiento de las prioridades para realizar el diseño.
+  b. La concertación de los recursos humanos, técnicos y financieros para su ejecución.
+  c. La definición del seguimiento y asesoría al proceso.
+2. Serán responsabilidades regionales:
+  a. La ejecución del proceso.
+  b. La actualización de los docentes participantes en el diseño y la previsión de las necesidades de formación y actualización de los demás docentes del área, de acuerdo con los cambios en el diseño.
+3. Serán responsabilidades de la Dirección General:
+  a. La coordinación de la validación de los productos del diseño, el análisis y la difusión de los mismos.
+  b. La coordinación entre las regionales participantes en un mismo diseño.
+  c. El seguimiento y la asesoría al proceso, dentro de los criterios de la Unidad Técnica.
+
+@seccion cap-5 | Proceso de enseñanza-aprendizaje y su administración | Capítulo V · Arts. 27–32
+
+# CAPITULO V
+## Proceso de enseñanza – aprendizaje y su administración
+
+@art 27. | Definición y ámbito.
+El proceso de enseñanza-aprendizaje es el conjunto de acciones y estrategias que realiza el sujeto de formación -considerado individual y colectivamente- con la gestión facilitadora y orientadora del docente para lograr los objetivos de la Formación Profesional Integral.
+El proceso de enseñanza-aprendizaje podrá ser desarrollado de manera presencial, no presencial o combinando ambas formas; para ello se utilizarán ambientes educativos tales como centros de formación, empresas y comunidades urbanas y rurales.
+
+@art 28. | Características.
+El proceso de enseñanza-aprendizaje estará centrado en el sujeto de formación y hará énfasis tanto en el aprendizaje por proceso como en el de contenidos. Se desarrollará en un contexto de desescolarización, de socialización y de atención diferenciada según las personas, empresas y comunidades.
+
+@art 29. | Fases.
+El proceso de enseñanza-aprendizaje comprende: la organización del ambiente educativo, la inducción, la concertación del plan de formación, el desarrollo de actividades de aprendizaje y la evaluación del mismo.
+1. Organización del ambiente educativo: se entiende por ambiente educativo el conjunto de condiciones que propician y facilitan el logro de los objetivos de la Formación Profesional Integral. Este ambiente puede configurarse tanto en instalaciones de la Entidad como en empresas y otros sitios de vivienda o trabajo de los sujetos de formación.
+  Los elementos constitutivos del ambiente educativo son:
+  a. La relación pedagógica alumno-docente en un clima de comprensión, afecto y respeto mutuo.
+  b. La organización intencional de todos los recursos requeridos para el proceso de enseñanza-aprendizaje en función de los objetivos de la Formación Profesional Integral.
+  c. La participación, como objetivo y método de formación.
+  @par Parágrafo:
+    1. La consecución y utilización de los medios, será coherente con los objetivos y el carácter integral de la formación.
+    2. La administración será consecuente y estará comprometida con la configuración y mantenimiento del ambiente educativo propicio.
+2. Inducción: Es la fase mediante la cual el sujeto de formación conoce la estructura y función de la Entidad, se inicia en su papel de sujeto activo de la Formación Profesional Integral, establece el nivel de sus conocimientos teniendo en cuenta sus experiencias y aprendizajes previos y sus aspiraciones y metas futuras e identifica las perspectivas socio-económicas de la actividad seleccionada.
+3. Concertación del plan de formación: es la fase del proceso mediante la cual se concreta el principio de que la Formación Profesional Integral es participativa, y en la cual el sujeto de formación, con la orientación del docente, establece los objetivos específicos de su plan de formación, el itinerario, los métodos y medios necesarios para llegar a ellos y los mecanismos que permitan evaluar de manera permanente su avance en el proceso de enseñanza - aprendizaje.
+4. Desarrollo de actividades de aprendizaje: en esta fase, el aprendizaje se realiza a través de la conducta activa del sujeto de formación, mediante la selección y utilización combinada de contenidos, métodos y medios que permitan el logro de los objetivos propuestos.
+  Las actividades se organizarán según el principio pedagógico de Aprender Haciendo, centrando el proceso en el alumno para hacer posible la autoformación.
+  Las actividades y estrategias de aprendizaje se seleccionarán de acuerdo con los objetivos, la población, las circunstancias concretas, la disponibilidad de medios, los contenidos y las políticas institucionales.
+5. Evaluación: es la comparación que de manera contínua, permanente y conjunta, realizan el sujeto de formación y el docente, entre los objetivos establecidos y los avances logrados, con el objeto de realizar los ajustes necesarios para el adecuado desarrollo del proceso de enseñanza - aprendizaje.
+  Serán objeto de evaluación: el desarrollo de conocimientos científicos y tecnológicos y de habilidades técnicas, la asimilación de valores humanos y sociales, la generación de las correspondientes actitudes y el desarrollo de la capacidad de aprender de manera permanente.
+@par Parágrafo: | Estas fases se realizarán de manera flexible de acuerdo con el ámbito en el cual se esté desarrollando el proceso de enseñanza-aprendizaje.
+
+@art 30. | Responsabilidades dentro del proceso de enseñanza-aprendizaje.
+1. Del sujeto de formación: desarrollar su plan de formación, asumir responsable y críticamente su papel como protagonista del proceso de formación profesional y contribuir en la capacitación de su propia comunidad.
+2. Del instructor y del asesor de empresas: diseñar, orientar, facilitar y evaluar el proceso de enseñanza-aprendizaje para el desarrollo integral del sujeto de formación.
+3. Del supervisor: orientar y apoyar técnica, pedagógica y administrativamente a los instructores para que desempeñen a cabalidad el papel que les corresponde dentro del proceso de formación y facilitar el establecimiento de un ambiente educativo adecuado.
+
+@art 31. | Administración.
+La administración del proceso en lo concerniente al sujeto de formación, comprende el ingreso, el registro, el seguimiento y la evaluación de las actividades de aprendizaje y la certificación.
+1. El ingreso comprende: la promoción de servicios, la información a los aspirantes, la inscripción, la selección y la matrícula.
+  a. Promoción de los servicios: es la actividad que tiene por objeto informar a la población sobre las acciones de la Entidad, orientar a los usuarios potenciales sobre los planes y programas de formación profesional y servir como instrumento para concertar acciones con el medio externo.
+  b. Información a los aspirantes: actividad en la cual se explican los contenidos, requisitos de entrada, comportamiento de los mercados de trabajo, compromisos que se adquieren y los niveles de certificación que ofrece el SENA.
+  c. Inscripción: es la fase del ingreso de los sujetos de formación, en la cual se verifican y consignan los datos de identificación y ocupación, de los aspirantes a ingresar a la formación profesional. El registro de la inscripción se constituye en el mecanismo de identificación y seguimiento del alumno en el proceso de formación y de caracterización de la población usuaria de la Formación Profesional Integral.
+  d. Selección: el ingreso al SENA en calidad de sujeto de formación, estará precedido por la comprobación de que el aspirante cumple con los requisitos que previamente se hayan establecido para cada proyecto, teniendo en cuenta factores tales como población objetivo, los planes de formación y la capacidad de respuesta específica que tenga la Entidad.
+  e. Matrícula: es la formulación del ingreso del sujeto de formación al proceso de enseñanza - aprendizaje.
+2. El registro, seguimiento y evaluación: de las actividades de aprendizaje se hará sobre el desarrollo de todo el proceso, según lo establecido en los artículos anteriores.
+3. La certificación: es el reconocimiento formal, por parte del SENA, de que una persona ha alcanzado determinados objetivos de aprendizaje.
+@par Parágrafo:
+  1. La Entidad mantendrá el sistema nacional y unificado de registro y certificación de alumnos, que tendrán como soporte los registros diligenciados en el seguimiento y evaluación.
+  2. Los aspectos administrativos anteriormente descritos se aplicarán con flexibilidad según las condiciones en que se esté desarrollando el proceso.
+
+@art 32. | Validación.
+La validación es un componente de la Formación Profesional Integral que consiste en reconocer los aprendizajes previos de las personas con el fin de certificarlos, o de permitirles el ingreso en el nivel adecuado de una ruta de formación.
+
+@seccion cap-6 | Formación integral de docentes | Capítulo VI · Arts. 33–40
+
+# CAPITULO VI
+## Formación integral de docentes
+
+@art 33. | Docentes.
+Son docentes quienes diseñan, orientan y evalúan los procesos de enseñanza-aprendizaje, esto es, instructores, asesores de empresas, supervisores y asesores técnico-pedagógicos.
+
+@art 34. | Perfil del docente.
+La Institución establecerá el perfil básico del docente dentro del cual se identifiquen claramente los elementos de tipo tecnológico, pedagógico y actitudinal requeridos para el cabal desempeño de su labor en relación con el Aprender a Hacer, Aprender a Aprender y Aprender a Ser.
+
+@art 35. | Diseño de la formación integral de docentes.
+La formación integral de docentes será coherente con la concepción institucional de la formación profesional y en consecuencia:
+1. Será permanente y tendrá como finalidad mejorar el desempeño de sus funciones, procurar su desarrollo personal y contribuir a la proyección institucional.
+2. Involucrará la investigación y el diseño de las didácticas específicas como elemento clave que permita integrar la reflexión sobre la práctica del docente a su propia formación.
+
+@art 36. | Responsabilidades.
+El docente debe asumir crítica y responsablemente su proceso de formación y actualización.
+@par Parágrafo: | Corresponde a todo Directivo del SENA promover, orientar y hacer posible la formación y actualización de los funcionarios a su cargo.
+
+@art 37. | Contenidos de la formación.
+La formación de docentes se desarrollará por niveles progresivos de profundidad e integrará contenidos sobre fundamentación ética y socio-económica de la formación profesional así como sobre aspectos tecnológicos y pedagógicos; también contendrá elementos de administración para el ejercicio de las funciones docentes.
+
+@art 38. | Estrategias generales y específicas para la formación integral de los docentes.
+El proceso de formación de los docentes será teórico-práctico, ejecutado en la Regional o en la zona y certificado por la Dirección General. Se encaminará a lograr un manejo integrado de la tecnología, la pedagogía, la organización y la gestión empresarial y a vincular la actividad de capacitación con los procesos productivos reales. Como producto de la formación quedarán trabajos útiles para el SENA, la comunidad o las empresas, tales como estudios de trabajo, investigaciones tecnológicas, guías, cartillas, medios audiovisuales, entre otros.
+
+@art 39. | Validación para docentes.
+El SENA establecerá un sistema de validación que le permita reconocer los aprendizajes pedagógicos, tecnológicos y científicos previamente adquiridos por el docente para efectos de su certificación como docentes SENA.
+
+@art 40. | Evaluación de la formación integral de los docentes.
+Durante el proceso de formación de docentes se hará confrontación permanente entre los objetivos por alcanzar y los logros obtenidos a fin de retroalimentar el proceso.
+
+@seccion cap-7-8 | Evaluación e instancias de coordinación | Capítulos VII y VIII · Arts. 41–45
+
+# CAPITULO VII
+## Evaluación de la Formación Profesional Integral
+
+@art 41. | Definición.
+La evaluación es un proceso permanente de recolección, análisis y utilización de información relativa al desarrollo de los proyectos de Formación Profesional Integral, con el fin de garantizar que éstos se desarrollen dentro de los marcos y hacia los objetivos consignados en el presente Acuerdo.
+Todo proyecto será evaluado en función del impacto socio-económico y tecnológico que produzca la formación profesional.
+
+# CAPITULO VIII
+## Instancias de coordinación para la Unidad Técnica
+
+@art 42. | Enumeración.
+Serán instancias de coordinación para la Unidad Técnica, las siguientes:
+- El Comité de la Dirección.
+- Comité de Subdirección.
+- Comités de Gerencia.
+- Grupos Primarios de las Regionales.
+- Grupo Técnico Pedagógico de cada Regional.
+
+@art 43. | | Todos los funcionarios del SENA son responsables de la Formación Profesional Integral y del logro de sus objetivos. Para tal efecto la Entidad organizará programas de actualización orientados a todos los funcionarios.
+
+@art 44. | Grupos técnico-pedagógicos.
+Se crearán grupos técnico-pedagógicos de carácter interdisciplinario con participación del personal directivo y docente.
+Estos grupos coordinarán las acciones de tecnología educativa en su respectiva Regional: diseño, formación técnica, tecnológica y pedagógica de los docentes, asesoría a los centros y programas, producción, selección y utilización de medios.
+La estructuración de estos grupos se hará según las características regionales.
+
+@art 45. | | Este Acuerdo se enmarca dentro de la Ley 188 de 1959 y complementa el Acuerdo N° 66 de 1972.
+
+## COMUNIQUESE y CÚMPLASE
+
+Dado en Bogotá D.E. a los 28 días del mes de Agosto de 1985.
+
+El original lo firman:
+@firmas
+ANTONIO DIAZ GARCIA
+Presidente del Consejo
+Secretario General del Ministerio de Trabajo y Seguridad Social
+
+BERNARDO VARGAS GIRALDO
+Secretario del Consejo
+Secretario General del SENA.

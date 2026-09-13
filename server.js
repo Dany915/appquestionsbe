@@ -18,6 +18,7 @@ class Server {
             userStats: '/api/user-stats',
             frames:    '/api/frames',
             avatars:   '/api/avatars',
+            lectura:   '/api/lectura',
         };
 
         this.conectarBD();
@@ -56,6 +57,7 @@ class Server {
         this.app.use(this.paths.userStats, require('./routes/userStats'));
         this.app.use(this.paths.frames,    require('./routes/frames'));
         this.app.use(this.paths.avatars,   require('./routes/avatars'));
+        this.app.use(this.paths.lectura,   require('./routes/lectura'));
     }
 
     listen() {
