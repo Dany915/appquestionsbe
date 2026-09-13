@@ -96,8 +96,9 @@ const fetchPreguntasConFallback = async (topicIds, nivelInicial, count, nivelMax
  * Actualiza currentStreak y maxStreak del usuario al guardar un intento.
  * Reglas (los días se cuentan en la zona horaria del usuario):
  *   - Si ya hizo un intento hoy → racha no cambia (ya se contó)
- *   - Si el último intento fue ayer → se extiende la racha
- *   - Si pasó más de un día → se reinicia a 1
+ *   - Si el último intento está dentro de los días de gracia → suma un día
+ *   - Si pasaron más días → se reinicia a 1
+ * Ver DIAS_GRACIA en helpers/racha.js.
  *
  * Al final evalúa los marcos de racha. Devuelve los recién desbloqueados
  * (array vacío si no hay ninguno).
@@ -106,7 +107,7 @@ const actualizarRacha = async (userId) => {
     const user = await User.findById(userId);
     if (!user) return [];
 
-    const { jugoHoy, jugoAyer } = estadoRacha(user);
+    const { jugoHoy, rachaViva } = estadoRacha(user);
 
     if (jugoHoy) {
         // Ya hizo un intento hoy: la racha no cambia, pero se revalúan los
@@ -114,7 +115,7 @@ const actualizarRacha = async (userId) => {
         return evaluarMarcosRacha(userId, user.currentStreak);
     }
 
-    const nuevaRacha = jugoAyer ? user.currentStreak + 1 : 1;
+    const nuevaRacha = rachaViva ? user.currentStreak + 1 : 1;
 
     await User.findByIdAndUpdate(userId, {
         currentStreak:   nuevaRacha,

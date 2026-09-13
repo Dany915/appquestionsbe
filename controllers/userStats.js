@@ -122,7 +122,13 @@ const dashboard = async (req, res) => {
             },
             // Para que la app avise antes de que se pierda (notificación local)
             racha: {
-                jugoHoy:  racha.jugoHoy,
+                // OJO: no es "jugó hoy" literal. La app (v actual) solo usa
+                // este campo para los recordatorios locales, que asumen racha
+                // diaria: con `false` avisa "tu racha está en juego hoy". Con
+                // días de gracia eso solo es cierto el último día, así que
+                // mandamos `true` mientras hoy no haga falta jugar.
+                // Cuando la app lea `enRiesgo`, volver a racha.jugoHoy.
+                jugoHoy:  racha.cubiertoHoy,
                 enRiesgo: racha.enRiesgo,
                 expiraEn: racha.expiraEn,
             },
