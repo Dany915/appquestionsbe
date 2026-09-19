@@ -601,7 +601,8 @@ GET /api/user-stats/dashboard
     "avatarId": null,
     "currentStreak": 5,
     "maxStreak": 12,
-    "marcoEquipado": null
+    "marcoEquipado": null,
+    "estiloNombre": null
   },
   "racha": {
     "jugoHoy": false,
@@ -635,7 +636,22 @@ GET /api/user-stats/dashboard
 - `racha.enRiesgo` → tiene racha viva y **hoy es su último día** para conservarla. Pintar la llama apagada / avisar.
 - `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes (fin del 3.er día sin jugar). `null` si no tiene racha.
 - La app usa `currentStreak` + `jugoHoy` para programar los **recordatorios locales** (`StreakReminderService`): 20:00 hora local hoy si está en riesgo, y mañana/pasado por si no vuelve a abrir la app. Se reprograman en cada carga del dashboard, sin servidor. En la próxima versión conviene que use `enRiesgo` y `expiraEn`, y devolver `jugoHoy` a su significado literal.
-- El texto de la pantalla de instrucciones ("si dejas pasar un día entero, vuelve a empezar") quedó desactualizado: corregirlo en la próxima versión.
+- `user.estiloNombre` → estilo del nombre según la racha viva (ver "Estilos de nombre por racha"). Viene también en el ranking y el perfil público.
+
+**Estilos de nombre por racha** (`helpers/estiloNombre.js`):
+
+| `estiloNombre` | Racha viva |
+|---|---|
+| `null` | 0 – 6 días (nombre normal) |
+| `plata` | 7 – 13 |
+| `plata_reluciente` | 14 – 29 |
+| `oro` | 30 – 59 |
+| `oro_reluciente` | 60 – 99 |
+| `diamante` | 100 – 149 |
+| `diamante_reluciente` | 150+ |
+
+- Se calcula con la racha visible, así que al perder la racha vuelve a `null` solo.
+- El backend manda el id; los colores y animaciones los decide la app según el tema (`lib/widgets/styled_name.dart`). Un id que la app no conozca se pinta como nombre normal.
 
 ---
 
@@ -741,6 +757,8 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
       "avatar": "",
       "avatarTipo": "catalogo",
       "avatarId": "zorro/zorro_gafas",
+      "marcoEquipado": "gold.static",
+      "estiloNombre": "plata_reluciente",
       "nivel": 23,
       "rango": "Conocedor",
       "xpSemana": 1240,
@@ -776,8 +794,58 @@ La semana va de **lunes a domingo (UTC)** y el ranking se reinicia automáticame
 - **Mostrar siempre `displayName`**, nunca `username`. Como no es único, dos jugadores pueden tener el mismo `displayName` — el `uid` es lo que los distingue.
 - Con `semana.fin` se puede mostrar la cuenta regresiva ("El ranking cierra en 2 días").
 - `uid` → id del jugador: se usa para abrir su **perfil público** al tocar la fila (ver endpoint siguiente).
+- `estiloNombre` → pintar el nombre con el estilo de su racha (ver "Estilos de nombre por racha"). `null` = normal.
+- A igual XP va primero quien la consiguió con menos quizzes. Es el mismo orden que usa el cierre semanal para premiar y para el resultado de cada jugador.
 
 > Todas las filas (`top`, `yo` y `vecinos`) tienen la misma estructura.
+
+---
+
+### Resultado de la semana cerrada
+```
+GET /api/user-stats/resultado-semana
+```
+**Header:** `Authorization: Bearer <token>` (requerido)
+
+Posición final del usuario en la **última semana cerrada** (la que terminó el domingo), con un mensaje según el puesto. La app lo consulta al abrir el home y lo muestra **una sola vez**.
+
+**Respuesta:**
+```json
+{
+  "ok": true,
+  "resultado": {
+    "semana": "2026-09-07T00:00:00.000Z",
+    "inicio": "2026-09-07T05:00:00.000Z",
+    "fin": "2026-09-14T05:00:00.000Z",
+    "posicion": 2,
+    "totalParticipantes": 21,
+    "xpSemana": 1019,
+    "posicionAnterior": 5,
+    "grupo": "podio",
+    "titulo": "¡Estuviste en el podio!",
+    "mensaje": "Quedaste 2º de 21 jugadores. Subiste 3 puestos."
+  }
+}
+```
+- `resultado` viene **`null`** si el usuario no ganó XP esa semana o si ya lo vio. Si pasó varias semanas sin entrar, solo se muestra la más reciente.
+- `semana` es el id de la semana (lunes 00:00 de Colombia expresado como fecha UTC): se devuelve tal cual para marcarlo como visto. `inicio`/`fin` son los instantes reales.
+- `grupo`: `primero` · `podio` (2º-3º) · `top10` · `mitad` (mitad superior) · `resto`.
+- `titulo` y `mensaje` los arma el backend (`helpers/mensajeSemana.js`) para poder cambiarlos sin publicar versión. Si subió puestos se dice eso; si no, cuánta XP le faltó para el siguiente tramo (nº 1, podio o top 10).
+- Los resultados se guardan al cerrar la semana (`ResultadoSemanal`) para todos los participantes. Las semanas cerradas antes de existir esta función se generan la primera vez que alguien lo pide.
+
+---
+
+### Marcar el resultado semanal como visto
+```
+POST /api/user-stats/resultado-semana/visto
+```
+**Body:**
+```json
+{ "semana": "2026-09-07T00:00:00.000Z" }
+```
+Marca como visto ese resultado y los anteriores que quedaran pendientes. **Respuesta:** `{ "ok": true }`
+
+> En la app: primero se muestra el resultado de la semana y después los marcos pendientes, que para el top 10 incluyen el dorado ganado en ese cierre.
 
 ---
 
@@ -802,7 +870,8 @@ El `uid` sale de cualquier fila del ranking semanal. Sirve para abrir el perfil 
     "avatarId": "gato/gatorosa_gorra",
     "currentStreak": 12,
     "maxStreak": 30,
-    "marcoEquipado": null
+    "marcoEquipado": null,
+    "estiloNombre": "plata"
   },
   "progreso": {
     "nivel": 23,

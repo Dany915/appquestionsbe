@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { query, param } = require('express-validator');
+const { query, param, body } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 const { validarJWT }    = require('../middlewares/validar-jwt');
 const {
@@ -10,6 +10,8 @@ const {
     nivelUsuario,
     rankingSemanal,
     perfilPublico,
+    resultadoSemana,
+    marcarResultadoVisto,
 } = require('../controllers/userStats');
 
 const router = Router();
@@ -87,5 +89,24 @@ router.get('/perfil/:uid', [
         .isMongoId().withMessage('El ID proporcionado no tiene un formato válido.'),
     validarCampos,
 ], perfilPublico);
+
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/user-stats/resultado-semana
+ * Posición final del usuario en la última semana cerrada + mensaje.
+ * `resultado: null` si no participó o ya lo vio.
+ */
+router.get('/resultado-semana', resultadoSemana);
+
+/**
+ * POST /api/user-stats/resultado-semana/visto
+ * Body: { semana } — el valor `semana` que devolvió el GET.
+ */
+router.post('/resultado-semana/visto', [
+    body('semana')
+        .isISO8601().withMessage('El campo "semana" debe ser una fecha ISO.'),
+    validarCampos,
+], marcarResultadoVisto);
 
 module.exports = router;

@@ -6,7 +6,13 @@ const { cerrarSemanasPendientes } = require('../helpers/weeklyClose');
 const { nombreVisible } = require('../helpers/displayName');
 const { estadoRacha }   = require('../helpers/racha');
 const { avatarVisible } = require('../helpers/avatars');
-const { idSemanaDe, ventanaSemana } = require('../helpers/semana');
+const { idSemanaDe, ventanaSemana, idSemanaAnterior } = require('../helpers/semana');
+const WeeklyClose      = require('../models/weeklyClose');
+const ResultadoSemanal = require('../models/resultadoSemanal');
+const { asegurarResultados } = require('../helpers/resultadoSemanal');
+const { mensajeResultado }   = require('../helpers/mensajeSemana');
+const { filasSemana }   = require('../helpers/rankingSemanal');
+const { estiloNombrePorRacha } = require('../helpers/estiloNombre');
 
 const NIVEL_ORDER = ['curioso', 'analitico', 'estratega', 'genio'];
 
@@ -119,6 +125,7 @@ const dashboard = async (req, res) => {
                 currentStreak: racha.rachaEfectiva,
                 maxStreak:     user.maxStreak,
                 marcoEquipado: user.marcoEquipado || null,
+                estiloNombre:  estiloNombrePorRacha(racha.rachaEfectiva),
             },
             // Para que la app avise antes de que se pierda (notificación local)
             racha: {
@@ -314,7 +321,8 @@ const perfilPublico = async (req, res) => {
             return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
         }
 
-        const s = resumen[0] || {};
+        const s     = resumen[0] || {};
+        const racha = estadoRacha(user).rachaEfectiva;
 
         return res.status(200).json({
             ok:   true,
@@ -324,9 +332,10 @@ const perfilPublico = async (req, res) => {
                 displayName:   nombreVisible(user),
                 // avatar, avatarTipo y avatarId ya resueltos (helpers/avatars.js)
                 ...avatarVisible(user),
-                currentStreak: estadoRacha(user).rachaEfectiva,
+                currentStreak: racha,
                 maxStreak:     user.maxStreak,
                 marcoEquipado: user.marcoEquipado || null,
+                estiloNombre:  estiloNombrePorRacha(racha),
             },
             progreso: progresoNivel(user.xp || 0),
             stats: {
@@ -367,20 +376,11 @@ const rankingSemanal = async (req, res) => {
             (err) => console.error('Error cerrando semanas pendientes:', err)
         );
 
-        const { inicio, fin } = ventanaSemana(idSemanaDe());
+        const semana = idSemanaDe();
+        const { inicio, fin } = ventanaSemana(semana);
 
         // XP semanal por usuario, ordenada de mayor a menor
-        const filas = await Attempt.aggregate([
-            { $match: { createdAt: { $gte: inicio, $lt: fin }, xpGanada: { $gt: 0 } } },
-            {
-                $group: {
-                    _id:      '$userId',
-                    xpSemana: { $sum: '$xpGanada' },
-                    quizzes:  { $sum: 1 },
-                },
-            },
-            { $sort: { xpSemana: -1, quizzes: 1 } },
-        ]);
+        const filas = await filasSemana(semana);
 
         const miIndex = filas.findIndex(f => String(f._id) === userId);
 
@@ -396,7 +396,7 @@ const rankingSemanal = async (req, res) => {
         const ids      = [...indices].map(i => filas[i]._id);
         const usuarios = await User.find(
             { _id: { $in: ids }, active: true },
-            'username displayName avatar avatarTipo avatarId xp marcoEquipado'
+            'username displayName avatar avatarTipo avatarId xp marcoEquipado currentStreak lastAttemptDate utcOffsetMin'
         );
         const porId    = new Map(usuarios.map(u => [String(u._id), u]));
 
@@ -415,6 +415,8 @@ const rankingSemanal = async (req, res) => {
                 displayName:  nombreVisible(u),
                 ...avatarVisible(u),
                 marcoEquipado: u?.marcoEquipado || null,
+                // Plata → diamante reluciente según la racha viva (null = normal)
+                estiloNombre: u ? estiloNombrePorRacha(estadoRacha(u).rachaEfectiva) : null,
                 nivel:        prog.nivel,
                 rango:        prog.rango,
                 xpSemana:     f.xpSemana,
@@ -453,6 +455,78 @@ const rankingSemanal = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/user-stats/resultado-semana
+ * Posición final del usuario en la última semana cerrada, con un mensaje según
+ * el puesto. La app lo muestra una vez al abrir y luego lo marca como visto.
+ *
+ * Devuelve `resultado: null` si esa semana no ganó XP o si ya lo vio. Si pasó
+ * varias semanas sin entrar solo se muestra la más reciente.
+ */
+const resultadoSemana = async (req, res) => {
+    const userId = new mongoose.Types.ObjectId(req.uid);
+
+    try {
+        // Garantiza que la semana pasada esté cerrada aunque nadie haya
+        // abierto el ranking desde el lunes
+        await cerrarSemanasPendientes().catch(
+            (err) => console.error('Error cerrando semanas pendientes:', err)
+        );
+
+        const semana = idSemanaAnterior(idSemanaDe());
+        const cierre = await WeeklyClose.findOne({ inicioSemana: semana, estado: 'completada' });
+        if (!cierre) return res.status(200).json({ ok: true, resultado: null });
+
+        await asegurarResultados(cierre);
+
+        const r = await ResultadoSemanal.findOne({ userId, semana, visto: false }).lean();
+        if (!r) return res.status(200).json({ ok: true, resultado: null });
+
+        const { inicio, fin } = ventanaSemana(semana);
+        const { grupo, titulo, mensaje } = mensajeResultado(r, `${req.uid}:${semana.toISOString()}`);
+
+        return res.status(200).json({
+            ok: true,
+            resultado: {
+                // Para marcarlo como visto
+                semana:             semana,
+                inicio,
+                fin,
+                posicion:           r.posicion,
+                totalParticipantes: r.totalParticipantes,
+                xpSemana:           r.xpSemana,
+                posicionAnterior:   r.posicionAnterior,
+                grupo,
+                titulo,
+                mensaje,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al obtener el resultado de la semana.' });
+    }
+};
+
+/**
+ * POST /api/user-stats/resultado-semana/visto
+ * Marca como visto el resultado de esa semana (y los anteriores que quedaran
+ * pendientes, que ya no se van a mostrar).
+ */
+const marcarResultadoVisto = async (req, res) => {
+    const userId = new mongoose.Types.ObjectId(req.uid);
+
+    try {
+        await ResultadoSemanal.updateMany(
+            { userId, semana: { $lte: new Date(req.body.semana) }, visto: false },
+            { $set: { visto: true } },
+        );
+        return res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, msg: 'Error interno al marcar el resultado como visto.' });
+    }
+};
+
 module.exports = {
     dashboard,
     porTema,
@@ -461,4 +535,6 @@ module.exports = {
     nivelUsuario,
     rankingSemanal,
     perfilPublico,
+    resultadoSemana,
+    marcarResultadoVisto,
 };

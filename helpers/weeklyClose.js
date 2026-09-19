@@ -1,10 +1,11 @@
-const Attempt     = require('../models/attempt');
 const User        = require('../models/user');
 const WeeklyClose = require('../models/weeklyClose');
 const { otorgarMarcos }    = require('./frames');
 const { marcosPorRanking } = require('./frameRewards');
 const { nombreVisible }    = require('./displayName');
-const { idSemanaDe, ventanaSemana, idSemanaAnterior } = require('./semana');
+const { filasSemana }      = require('./rankingSemanal');
+const { generarResultados } = require('./resultadoSemanal');
+const { idSemanaDe, idSemanaAnterior } = require('./semana');
 
 /** Cuántos usuarios del top se premian como máximo. */
 const TOP_PREMIADO = 10;
@@ -23,8 +24,6 @@ const TOP_PREMIADO = 10;
  * @returns {Promise<boolean>} true si esta llamada fue la que cerró la semana
  */
 const cerrarSemana = async (inicioSemana) => {
-    const { inicio, fin } = ventanaSemana(inicioSemana);
-
     let cierre;
     try {
         // Intento de tomar el cerrojo. Falla si la semana ya está registrada.
@@ -37,22 +36,12 @@ const cerrarSemana = async (inicioSemana) => {
         throw error;
     }
 
-    // XP de esa semana por usuario
-    const filas = await Attempt.aggregate([
-        {
-            $match: {
-                createdAt: { $gte: inicio, $lt: fin },
-                xpGanada:  { $gt: 0 },
-            },
-        },
-        { $group: { _id: '$userId', xpSemana: { $sum: '$xpGanada' } } },
-        { $sort: { xpSemana: -1 } },
-        { $limit: TOP_PREMIADO },
-    ]);
+    // XP de esa semana por usuario, con el mismo orden que ve la app
+    const filas = await filasSemana(inicioSemana);
 
     const snapshot = [];
 
-    for (let i = 0; i < filas.length; i++) {
+    for (let i = 0; i < Math.min(TOP_PREMIADO, filas.length); i++) {
         const posicion = i + 1;
         const userId   = filas[i]._id;
 
@@ -96,9 +85,20 @@ const cerrarSemana = async (inicioSemana) => {
         });
     }
 
-    cierre.estado             = 'completada';
-    cierre.top                = snapshot;
-    cierre.totalParticipantes = filas.length;
+    // Posición de todos los participantes, para mostrársela a cada uno.
+    // Si falla, se reintenta cuando alguien pida su resultado.
+    let resultadosGenerados = false;
+    try {
+        await generarResultados(inicioSemana);
+        resultadosGenerados = true;
+    } catch (err) {
+        console.error('Error generando resultados semanales:', err);
+    }
+
+    cierre.estado              = 'completada';
+    cierre.top                 = snapshot;
+    cierre.totalParticipantes  = filas.length;
+    cierre.resultadosGenerados = resultadosGenerados;
     await cierre.save();
 
     return true;

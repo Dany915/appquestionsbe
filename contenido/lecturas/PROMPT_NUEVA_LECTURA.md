@@ -13,7 +13,23 @@ igual que hicimos con el Acuerdo 12 de 1985 (Unidad Técnica SENA).
 - PDF: <ruta completa del PDF>
 - Curso: <cursoTag o nombre, ej. "sena">
 - Módulo: <moduleTag o nombre, ej. "Módulo 2">
-- Tema al que corresponde: <topicTag o nombre, ej. "PEI SENA">
+- Tema al que corresponde: <topicTag o nombre, ej. "Unidad Técnica SENA">
+
+CRITERIO DE ADMISIÓN (obligatorio): QLearning tiene planes Pro. Aunque las
+lecturas sean gratuitas, NO incluimos ningún documento que pueda traer
+problemas con su autor por ese motivo. Solo se admiten actos oficiales
+reproducibles libremente (leyes, decretos, ordenanzas, acuerdos, resoluciones
+y demás actos administrativos: art. 41 de la Ley 23 de 1982). Se descarta el
+documento si:
+  - no es un acto oficial (manuales, guías, documentos institucionales con ©,
+    libros, artículos, material de academias), aunque lo publique una entidad
+    pública; o
+  - tiene una licencia o términos de uso "no comercial" (p. ej. CC BY-NC,
+    BY-NC-SA) o que exijan autorización para reproducirlo; o
+  - su parte sustancial es contenido de terceros sin permiso.
+Si un documento mezcla partes admisibles y no admisibles, pregúntame antes de
+seguir solo con las admisibles. Precedente: el PEI SENA (2013) se descartó por
+ser un manual con © SENA bajo CC BY-NC-SA.
 
 Proyectos:
 - Backend Node: C:\Users\Daniel\Documents\APP NODE\app_questions
@@ -39,18 +55,32 @@ Pasos:
    scratchpad). Dime qué contiene realmente: qué normas o documentos, cuántas
    palabras y minutos aproximados. No asumas que es un solo documento.
 
-3. Lanza DOS agentes en paralelo (en segundo plano):
+3. Si del paso 2 ya es evidente que el documento no es un acto oficial (p. ej.
+   portada de manual o guía, "©", aviso de licencia), dímelo antes de lanzar
+   agentes y pregúntame si igual quiero la investigación.
+
+   Lanza PRIMERO el agente de derechos de autor (en segundo plano) y espera su
+   informe antes de planear nada:
    a) Agente de derechos de autor (general-purpose): investigar con fuentes si
       podemos reproducir el texto dentro de la app (no descargable, dividido en
-      secciones). Considerar Ley 23 de 1982 (art. 41 y 91), Decisión Andina 351,
-      Ley 1915 de 2018, si hay contenido de terceros en el PDF (introducciones,
-      notas editoriales, logos, academias), si el documento es acto oficial o
-      tiene autor privado/institucional con licencia (repositorios, CC), términos
-      de uso de las fuentes oficiales (Normograma SENA, SUIN-Juriscol, Función
-      Pública, repositorio SENA) y la vigencia del documento. Recordar: la app es
-      gratuita con plan Pro, y las lecturas siempre serán gratuitas. Entregar
-      veredicto, fundamento con enlaces, condiciones, texto de aviso sugerido y
-      nivel de confianza. No modificar archivos.
+      secciones). Lo primero que debe responder es el CRITERIO DE ADMISIÓN de
+      arriba: ¿es un acto oficial?, ¿fue adoptado por un acto administrativo?,
+      ¿tiene licencia o términos no comerciales?, ¿cuánto contenido de terceros
+      tiene? Además considerar Ley 23 de 1982 (art. 41 y 91), Decisión Andina
+      351, Ley 1915 de 2018, contenido de terceros en el PDF (introducciones,
+      notas editoriales, logos, academias), términos de uso de las fuentes
+      oficiales (Normograma SENA, SUIN-Juriscol, Función Pública, repositorio
+      SENA; buscar también la copia oficial del documento y su licencia) y la
+      vigencia. Recordar: la app es gratuita con plan Pro, y las lecturas siempre
+      serán gratuitas. Entregar veredicto (ADMISIBLE / NO ADMISIBLE / PARCIAL),
+      fundamento con enlaces, condiciones, texto de aviso sugerido y nivel de
+      confianza. No modificar archivos.
+
+   PUNTO DE CONTROL: si el veredicto es NO ADMISIBLE, detente. Resúmeme el
+   motivo, no lances el agente de planeación, no crees archivos ni toques la BD,
+   y da el documento por descartado. Si es PARCIAL, pregúntame antes de seguir.
+   Solo si es ADMISIBLE (o apruebo seguir con la parte admisible), lanza:
+
    b) Agente de planeación (Plan): proponer cómo dividir ESTE documento en
       secciones usando el formato existente (.lectura.txt): lista de secciones
       con slug, título, rango y palabras/minutos (objetivo 2–7 min, máx. ~1.200
@@ -61,7 +91,7 @@ Pasos:
       (p. ej. tablas o títulos de más niveles) y cómo añadirlo sin romper versiones
       viejas de la app. No escribir código ni tocar la BD.
 
-4. Cuando terminen, dame un resumen de ambos informes y pregúntame las
+4. Cuando termine la planeación, dame un resumen de ambos informes y pregúntame las
    decisiones pendientes (alcance: todo o por partes, anexos/tablas difíciles,
    lo que haga falta) ANTES de implementar.
 

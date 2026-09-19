@@ -31,6 +31,13 @@ const WeeklyCloseSchema = new Schema(
             default: 0,
         },
 
+        // Ya se guardó la posición de cada participante (ResultadoSemanal).
+        // Las semanas cerradas antes de existir se generan al pedirlas.
+        resultadosGenerados: {
+            type: Boolean,
+            default: false,
+        },
+
         // Foto del podio de esa semana (para histórico y auditoría)
         top: [
             {
