@@ -10,6 +10,7 @@ const {
     evaluarMarcosPrimerQuiz,
     evaluarMarcosQuizzes,
 } = require('../helpers/frameRewards');
+const { evaluarLogrosAcumulados } = require('../helpers/logros');
 
 const MAX_PREGUNTAS      = 50;  // tope absoluto (plan pro)
 const MAX_PREGUNTAS_FREE = 20;  // tope para plan free — los quizzes largos son perk pro
@@ -508,7 +509,8 @@ const calificarQuiz = async (req, res) => {
 
         // Actualizar racha y evaluar los marcos que otorga este quiz.
         // Un fallo aquí no debe tumbar la calificación: se registra y se sigue.
-        let marcosDesbloqueados = [];
+        let marcosDesbloqueados  = [];
+        let avatarsDesbloqueados = [];
         try {
             const porRacha = await actualizarRacha(userId) || [];
             const porPrimerQuiz = await evaluarMarcosPrimerQuiz(
@@ -519,9 +521,14 @@ const calificarQuiz = async (req, res) => {
                 totalGraded: totalCalificadas,
                 nivel: nivelValido,
             });
-            marcosDesbloqueados = [...porRacha, ...porPrimerQuiz, ...porQuizzes];
+            // Avatares y marcos de dedicación: miran el historial completo, así
+            // que también entregan lo que el usuario ya tenía ganado de antes.
+            const acumulados = await evaluarLogrosAcumulados(userId);
+
+            marcosDesbloqueados  = [...porRacha, ...porPrimerQuiz, ...porQuizzes, ...acumulados.marcos];
+            avatarsDesbloqueados = acumulados.avatars;
         } catch (err) {
-            console.error('Error evaluando marcos:', err);
+            console.error('Error evaluando logros:', err);
         }
 
         return res.status(200).json({
@@ -538,6 +545,7 @@ const calificarQuiz = async (req, res) => {
             progreso:           progresoInfo,
             // Marcos recién desbloqueados con este quiz (para celebrarlos)
             marcosDesbloqueados,
+            avatarsDesbloqueados,
             results:            resultados,
         });
 

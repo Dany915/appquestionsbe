@@ -13,10 +13,21 @@ const { otorgarMarcos } = require('./frames');
 //   blue_star/nebula static   → primer quiz superado          [IMPLEMENTADO]
 //   blue_star/nebula breathe  → primer quiz superado          [IMPLEMENTADO]
 //   blue_star shimmer→rays    → volumen y maestría en quizzes [IMPLEMENTADO]
+//   volcanic.*                → horas de práctica acumuladas  [IMPLEMENTADO]
 //   resto                     → pendiente de asignar
 //
 // Añadir una categoría nueva = añadir su tabla aquí y llamar al evaluador
 // correspondiente. Nada más del backend necesita cambiar.
+
+/** Horas de práctica acumuladas → marco. Orden ascendente obligatorio. */
+const MARCOS_TIEMPO = [
+    { horas: 1,   marco: 'volcanic.static'  },
+    { horas: 3,   marco: 'volcanic.breathe' },
+    { horas: 10,  marco: 'volcanic.shimmer' },
+    { horas: 25,  marco: 'volcanic.pulse'   },
+    { horas: 50,  marco: 'volcanic.sparkle' },
+    { horas: 100, marco: 'volcanic.rays'    },
+];
 
 /** Racha de días consecutivos → marco. Orden ascendente obligatorio. */
 const MARCOS_RACHA = [
@@ -95,6 +106,26 @@ const marcosPorRacha = (racha) =>
  */
 const evaluarMarcosRacha = async (userId, racha) => {
     const candidatos = marcosPorRacha(racha);
+    if (candidatos.length === 0) return [];
+    return otorgarMarcos(userId, candidatos);
+};
+
+/** Marcos que corresponden a unas horas de práctica acumuladas. */
+const marcosPorHoras = (horas) =>
+    MARCOS_TIEMPO.filter((m) => horas >= m.horas).map((m) => m.marco);
+
+/** true si al usuario aún le falta algún marco por horas de práctica. */
+const faltanMarcosTiempo = (desbloqueados = []) => {
+    const tiene = new Set(desbloqueados);
+    return MARCOS_TIEMPO.some((m) => !tiene.has(m.marco));
+};
+
+/**
+ * Evalúa y otorga los marcos por horas de práctica. Idempotente, igual que el
+ * resto: `otorgarMarcos` descarta los que ya tiene.
+ */
+const evaluarMarcosTiempo = async (userId, horas) => {
+    const candidatos = marcosPorHoras(horas);
     if (candidatos.length === 0) return [];
     return otorgarMarcos(userId, candidatos);
 };
@@ -218,6 +249,14 @@ const CATALOGO_MARCOS = [
     { id: 'blue_star.sparkle', categoria: 'Dominio', condicion: '30 quizzes perfectos en Estratega o Genio' },
     { id: 'blue_star.rays',    categoria: 'Dominio', condicion: '25 quizzes perfectos en Genio' },
 
+    // Dedicación (horas de práctica acumuladas)
+    { id: 'volcanic.static',  categoria: 'Dedicación', condicion: 'Practica 1 hora en total' },
+    { id: 'volcanic.breathe', categoria: 'Dedicación', condicion: 'Practica 3 horas en total' },
+    { id: 'volcanic.shimmer', categoria: 'Dedicación', condicion: 'Practica 10 horas en total' },
+    { id: 'volcanic.pulse',   categoria: 'Dedicación', condicion: 'Practica 25 horas en total' },
+    { id: 'volcanic.sparkle', categoria: 'Dedicación', condicion: 'Practica 50 horas en total' },
+    { id: 'volcanic.rays',    categoria: 'Dedicación', condicion: 'Practica 100 horas en total' },
+
     // Ranking semanal
     { id: 'gold.static',  categoria: 'Ranking semanal', condicion: 'Entra al top 10 de la semana' },
     { id: 'gold.breathe', categoria: 'Ranking semanal', condicion: 'Entra al top 3 de la semana' },
@@ -235,6 +274,7 @@ module.exports = {
     CATALOGO_MARCOS,
     condicionDeMarco,
     MARCOS_RACHA,
+    MARCOS_TIEMPO,
     MARCOS_RANKING,
     MARCOS_PRIMER_QUIZ,
     MARCOS_QUIZZES,
@@ -242,6 +282,9 @@ module.exports = {
     MIN_PREGUNTAS_MARCO,
     marcosPorRacha,
     evaluarMarcosRacha,
+    marcosPorHoras,
+    faltanMarcosTiempo,
+    evaluarMarcosTiempo,
     evaluarMarcosPrimerQuiz,
     evaluarMarcosQuizzes,
     marcosPorRanking,

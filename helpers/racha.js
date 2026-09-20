@@ -6,10 +6,10 @@ const DIA_MS = 24 * 60 * 60 * 1000;
  * Días de gracia de la racha: cuántos días pueden pasar entre un día activo y
  * el siguiente sin perderla. La racha cuenta DÍAS ACTIVOS, no días seguidos.
  *
- * Con 3: juega el día 1 → racha 1; vuelve el día 4 → racha 2; si vuelve el
- * día 5 o después → reinicia a 1. Con 1 sería la racha diaria clásica.
+ * Con 4: juega el día 1 → racha 1; vuelve el día 5 → racha 2; si vuelve el
+ * día 6 o después → reinicia a 1. Con 1 sería la racha diaria clásica.
  */
-const DIAS_GRACIA = 3;
+const DIAS_GRACIA = 4;
 
 /**
  * Estado real de la racha de un usuario en este momento.

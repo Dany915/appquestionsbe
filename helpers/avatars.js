@@ -16,9 +16,10 @@ const User = require('../models/user');
 //   pro   → se otorga al activar el plan pro y se queda para siempre
 //   logro → se otorga al cumplir su condición y se queda para siempre
 //
-// Los bloqueados llevan `condicion`: es lo que la app enseña debajo del
-// avatar en gris. Mientras no tengan un logro asignado se muestran como
-// "Próximamente" y solo se pueden conceder a mano (POST /api/avatars/otorgar).
+// La condición que la app enseña bajo cada avatar bloqueado sale de
+// helpers/avatarRewards.js, que es donde vive la tabla de logros. Un avatar
+// sin logro asignado se muestra como "Próximamente" y solo se puede conceder
+// a mano (POST /api/avatars/otorgar).
 //
 // Este catálogo existe para VALIDAR (que nadie equipe un avatar que la app no
 // tiene) y para que la app pinte en gris los que faltan, con su condición.
@@ -29,9 +30,6 @@ const CATEGORIAS_AVATAR = {
     dragon: 'Dragón',
 };
 
-// Condición provisional de los desbloqueables hasta que tengan logro asignado
-const PROXIMAMENTE = 'Próximamente';
-
 const CATALOGO_AVATARES = [
     // Gratuitos: el "default" de cada personaje
     { id: 'zorro/zorro_default',       nombre: 'Zorro',     categoria: 'zorro',  acceso: 'free' },
@@ -40,18 +38,18 @@ const CATALOGO_AVATARES = [
     { id: 'dragon/dragon_default_02',  nombre: 'Dragón',    categoria: 'dragon', acceso: 'free' },
 
     // Desbloqueables: pendientes de asignar su logro
-    { id: 'zorro/zorro_gafas',     nombre: 'Zorro cool',      categoria: 'zorro', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'zorro/zorro_gorra',     nombre: 'Zorro con gorra', categoria: 'zorro', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'zorro/zorro_enojado',   nombre: 'Zorro enojado',   categoria: 'zorro', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'gato/gatorosa_gafas',   nombre: 'Gato cool',       categoria: 'gato',  acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'gato/gatorosa_gorra',   nombre: 'Gato con gorra',  categoria: 'gato',  acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'gato/gatorosa_enojado', nombre: 'Gato enojado',    categoria: 'gato',  acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_confiado_01', nombre: 'Dragón confiado', categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_confiado_02', nombre: 'Dragón confiado', categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_frio_01',     nombre: 'Dragón frío',     categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_frio_02',     nombre: 'Dragón frío',     categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_gorra_01',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
-    { id: 'dragon/dragon_gorra_02',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro', condicion: PROXIMAMENTE },
+    { id: 'zorro/zorro_gafas',     nombre: 'Zorro cool',      categoria: 'zorro', acceso: 'logro' },
+    { id: 'zorro/zorro_gorra',     nombre: 'Zorro con gorra', categoria: 'zorro', acceso: 'logro' },
+    { id: 'zorro/zorro_enojado',   nombre: 'Zorro enojado',   categoria: 'zorro', acceso: 'logro' },
+    { id: 'gato/gatorosa_gafas',   nombre: 'Gato cool',       categoria: 'gato',  acceso: 'logro' },
+    { id: 'gato/gatorosa_gorra',   nombre: 'Gato con gorra',  categoria: 'gato',  acceso: 'logro' },
+    { id: 'gato/gatorosa_enojado', nombre: 'Gato enojado',    categoria: 'gato',  acceso: 'logro' },
+    { id: 'dragon/dragon_confiado_01', nombre: 'Dragón confiado', categoria: 'dragon', acceso: 'logro' },
+    { id: 'dragon/dragon_confiado_02', nombre: 'Dragón confiado', categoria: 'dragon', acceso: 'logro' },
+    { id: 'dragon/dragon_frio_01',     nombre: 'Dragón frío',     categoria: 'dragon', acceso: 'logro' },
+    { id: 'dragon/dragon_frio_02',     nombre: 'Dragón frío',     categoria: 'dragon', acceso: 'logro' },
+    { id: 'dragon/dragon_gorra_01',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro' },
+    { id: 'dragon/dragon_gorra_02',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro' },
 ];
 
 // Qué eligió mostrar el usuario. 'google' no se guarda: es lo que resulta de

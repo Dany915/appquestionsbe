@@ -181,7 +181,20 @@ GET /api/avatars
 ```
 - `avatar` / `avatarTipo` / `avatarId` → lo que lleva puesto ahora, igual que en el resto de endpoints.
 - `fotoGoogle` → la foto de Google aunque no la lleve puesta. Si viene vacía, el selector no ofrece la opción "Mi foto de Google".
-- `catalogo` → todos los avatares, agrupados por `categoria` (el título de cada grupo está en `categorias`). `disponible: false` → se muestra en gris con su `condicion`. Hoy solo los `default` de cada personaje son gratuitos (`zorro_default`, `gatorosa_default`, `dragon_default_01`, `dragon_default_02`); el resto son desbloqueables y traen `condicion: "Próximamente"` hasta que tengan logro asignado.
+- `catalogo` → todos los avatares, agrupados por `categoria` (el título de cada grupo está en `categorias`). `disponible: false` → se muestra en gris con su `condicion`. Hoy solo los `default` de cada personaje son gratuitos (`zorro_default`, `gatorosa_default`, `dragon_default_01`, `dragon_default_02`); los 12 restantes se desbloquean con logros.
+
+**Cómo se desbloquea cada avatar** (`helpers/avatarRewards.js`) — cada personaje premia una forma distinta de jugar:
+
+| Avatar | Condición |
+|---|---|
+| Zorro cool / con gorra / enojado | 10 · 50 · 150 quizzes resueltos |
+| Gato cool / con gorra / enojado | 100 · 500 · 1.500 respuestas correctas |
+| Dragón confiado 01 / 02 | 3 · 15 quizzes perfectos de 10+ preguntas |
+| Dragón frío 01 / 02 | 1 · 5 horas de práctica en total |
+| Dragón con gorra 01 / 02 | llegar al nivel 5 · 15 |
+
+- Un quiz cuenta para el volumen si tuvo **5 o más preguntas calificadas** (anti-farmeo).
+- Se evalúan al calificar un quiz y miran el **historial completo**, así que son retroactivos: en su siguiente quiz, el usuario recibe de golpe lo que ya tenía ganado.
 - `acceso` → `free` (todos), `pro` (se otorga al activar el plan pro) o `logro`. Lo desbloqueado **no se quita nunca**, aunque el plan caduque.
 - `pendientes` → avatares recién desbloqueados que aún no se han celebrado. Tras mostrarlos, llamar a `POST /api/avatars/vistos`.
 
@@ -514,6 +527,11 @@ POST /api/quiz/calificar
 ```
 > Este endpoint guarda el intento en la base de datos y actualiza automáticamente la racha y la XP del usuario. No hace falta llamar a nada más después.
 
+**Recompensas desbloqueadas por este quiz:**
+- `marcosDesbloqueados` → ids de marcos nuevos (racha, primer quiz de una dificultad, volumen/maestría y horas de práctica). La app los celebra con el diálogo de marco desbloqueado.
+- `avatarsDesbloqueados` → ids de avatares nuevos (ver "Mis avatares"). Van también a la cola `pendientes` de `GET /api/avatars`, así que se pueden celebrar ahí si la app aún no lee este campo.
+- Ambas listas vienen vacías la mayoría de las veces. Nunca se quita nada de lo ganado.
+
 **Sobre `xp` y `progreso`:**
 - `xp.ganada` es lo que generó el quiz; `xp.aplicada` es lo que realmente se sumó (puede ser menor si se alcanzó un límite diario).
 - `limiteIntentosAlcanzado: true` → el usuario **free** agotó sus intentos con XP del día. Puede seguir jugando pero gana 0 XP. **Momento ideal para ofrecer el plan pro.**
@@ -630,11 +648,11 @@ GET /api/user-stats/dashboard
 ```
 
 **Sobre la racha:**
-- La racha cuenta **días activos** con **3 días de gracia** (`DIAS_GRACIA` en `helpers/racha.js`): si entre un día con intentos y el siguiente pasan 3 días o menos, suma 1; si pasan más, reinicia a 1. Ej: juega el día 1 → 1; vuelve el día 4 → 2; vuelve el día 9 → 1.
+- La racha cuenta **días activos** con **4 días de gracia** (`DIAS_GRACIA` en `helpers/racha.js`): si entre un día con intentos y el siguiente pasan 4 días o menos, suma 1; si pasan más, reinicia a 1. Ej: juega el día 1 → 1; vuelve el día 5 → 2; vuelve el día 10 → 1.
 - `user.currentStreak` es la **racha real**: viene `0` si ya se perdió, aunque el usuario no haya vuelto a jugar. Los días se cuentan en la zona horaria del dispositivo (`utcOffsetMin`).
 - ⚠️ `racha.jugoHoy` → **no significa "jugó hoy"**: es `true` si hoy no necesita jugar para conservar la racha (jugó hoy o le quedan días de gracia después de hoy). Se mantiene con ese nombre para que los recordatorios de la versión actual de la app funcionen con la gracia sin publicar otra versión.
 - `racha.enRiesgo` → tiene racha viva y **hoy es su último día** para conservarla. Pintar la llama apagada / avisar.
-- `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes (fin del 3.er día sin jugar). `null` si no tiene racha.
+- `racha.expiraEn` → instante (ISO, UTC) en que se pierde si no juega antes (fin del 4.º día sin jugar). `null` si no tiene racha.
 - La app usa `currentStreak` + `jugoHoy` para programar los **recordatorios locales** (`StreakReminderService`): 20:00 hora local hoy si está en riesgo, y mañana/pasado por si no vuelve a abrir la app. Se reprograman en cada carga del dashboard, sin servidor. En la próxima versión conviene que use `enRiesgo` y `expiraEn`, y devolver `jugoHoy` a su significado literal.
 - `user.estiloNombre` → estilo del nombre según la racha viva (ver "Estilos de nombre por racha"). Viene también en el ranking y el perfil público.
 

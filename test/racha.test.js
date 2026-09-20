@@ -18,23 +18,23 @@ const jugoHace = (dias, extra = {}) => ({
     ...extra,
 });
 
-test('la gracia es de 3 días', () => {
-    assert.equal(DIAS_GRACIA, 3);
+test('la gracia es de 4 días', () => {
+    assert.equal(DIAS_GRACIA, 4);
 });
 
-test('jugó hoy: racha viva, cubierto y sin riesgo; expira al terminar el día +3', () => {
+test('jugó hoy: racha viva, cubierto y sin riesgo; expira al terminar el día +4', () => {
     const r = estadoRacha(jugoHace(0), AHORA);
     assert.equal(r.diasSinJugar, 0);
     assert.equal(r.jugoHoy, true);
     assert.equal(r.rachaEfectiva, 5);
     assert.equal(r.cubiertoHoy, true);
     assert.equal(r.enRiesgo, false);
-    // Medianoche de Colombia del 17-09 = 05:00 UTC
-    assert.equal(r.expiraEn.toISOString(), '2026-09-17T05:00:00.000Z');
+    // Medianoche de Colombia del 18-09 = 05:00 UTC
+    assert.equal(r.expiraEn.toISOString(), '2026-09-18T05:00:00.000Z');
 });
 
-test('días 1 y 2 sin jugar: sigue viva y hoy no hace falta jugar', () => {
-    for (const dias of [1, 2]) {
+test('días 1, 2 y 3 sin jugar: sigue viva y hoy no hace falta jugar', () => {
+    for (const dias of [1, 2, 3]) {
         const r = estadoRacha(jugoHace(dias), AHORA);
         assert.equal(r.jugoHoy, false);
         assert.equal(r.rachaViva, true);
@@ -44,16 +44,16 @@ test('días 1 y 2 sin jugar: sigue viva y hoy no hace falta jugar', () => {
     }
 });
 
-test('día 3 sin jugar: último día, en riesgo y expira esta medianoche', () => {
-    const r = estadoRacha(jugoHace(3), AHORA);
+test('día 4 sin jugar: último día, en riesgo y expira esta medianoche', () => {
+    const r = estadoRacha(jugoHace(4), AHORA);
     assert.equal(r.rachaEfectiva, 5);
     assert.equal(r.cubiertoHoy, false);
     assert.equal(r.enRiesgo, true);
     assert.equal(r.expiraEn.toISOString(), '2026-09-14T05:00:00.000Z');
 });
 
-test('día 4 sin jugar: la racha se perdió', () => {
-    const r = estadoRacha(jugoHace(4), AHORA);
+test('día 5 sin jugar: la racha se perdió', () => {
+    const r = estadoRacha(jugoHace(5), AHORA);
     assert.equal(r.rachaViva, false);
     assert.equal(r.rachaEfectiva, 0);
     assert.equal(r.cubiertoHoy, false);
@@ -62,11 +62,11 @@ test('día 4 sin jugar: la racha se perdió', () => {
 });
 
 test('los días se cuentan en hora local, no en horas transcurridas', () => {
-    // Jugó el 10-09 a las 23:30 de Colombia (04:30 UTC del 11): son 3 días
-    // locales hasta el 13, aunque en UTC ya sea el 11.
-    const user = { currentStreak: 2, utcOffsetMin: -300, lastAttemptDate: new Date('2026-09-11T04:30:00Z') };
+    // Jugó el 09-09 a las 23:30 de Colombia (04:30 UTC del 10): son 4 días
+    // locales hasta el 13, aunque en UTC ya sea el 10.
+    const user = { currentStreak: 2, utcOffsetMin: -300, lastAttemptDate: new Date('2026-09-10T04:30:00Z') };
     const r = estadoRacha(user, AHORA);
-    assert.equal(r.diasSinJugar, 3);
+    assert.equal(r.diasSinJugar, 4);
     assert.equal(r.enRiesgo, true);
 });
 

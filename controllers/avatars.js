@@ -12,6 +12,7 @@ const {
     avatarVisible,
     otorgarAvatars,
 } = require('../helpers/avatars');
+const { condicionDeAvatar } = require('../helpers/avatarRewards');
 
 /**
  * GET /api/avatars
@@ -42,6 +43,11 @@ const misAvatars = async (req, res = response) => {
             categorias:    CATEGORIAS_AVATAR,
             catalogo: CATALOGO_AVATARES.map((a) => ({
                 ...a,
+                // La condición sale de la tabla de logros; los que aún no
+                // tienen ninguno asignado se quedan en "Próximamente".
+                ...(a.acceso !== 'free' && {
+                    condicion: condicionDeAvatar(a.id) || a.condicion || 'Próximamente',
+                }),
                 disponible: puedeUsar(user, a.id),
             })),
         });
