@@ -26,16 +26,33 @@ const User = require('../models/user');
 
 const CATEGORIAS_AVATAR = {
     zorro:  'Zorro',
-    gato:   'Gato rosa',
+    gato:   'Gatos',
     dragon: 'Dragón',
+    llama:  'Llamas',
+    pro:    'Plan Pro',
+};
+
+/**
+ * Qué se le enseña al usuario bajo un avatar bloqueado cuando no tiene logro
+ * asignado en helpers/avatarRewards.js. Los de pago no son un "próximamente":
+ * ya se pueden conseguir, solo que pagando.
+ *
+ * Máximo 25 caracteres — es lo que cabe en la celda del selector
+ * (MAX_LARGO_CONDICION en helpers/avatarRewards.js).
+ */
+const CONDICION_POR_DEFECTO = {
+    pro:   'Incluido en el plan Pro',
+    logro: 'Próximamente',
 };
 
 const CATALOGO_AVATARES = [
     // Gratuitos: el "default" de cada personaje
-    { id: 'zorro/zorro_default',       nombre: 'Zorro',     categoria: 'zorro',  acceso: 'free' },
-    { id: 'gato/gatorosa_default',     nombre: 'Gato rosa', categoria: 'gato',   acceso: 'free' },
-    { id: 'dragon/dragon_default_01',  nombre: 'Dragón',    categoria: 'dragon', acceso: 'free' },
-    { id: 'dragon/dragon_default_02',  nombre: 'Dragón',    categoria: 'dragon', acceso: 'free' },
+    { id: 'zorro/zorro_default',       nombre: 'Zorro',      categoria: 'zorro',  acceso: 'free' },
+    { id: 'gato/gatorosa_default',     nombre: 'Gato rosa',  categoria: 'gato',   acceso: 'free' },
+    { id: 'gato/gatarosa_default',     nombre: 'Gata rosa',  categoria: 'gato',   acceso: 'free' },
+    { id: 'gato/gatonegro_default',    nombre: 'Gato negro', categoria: 'gato',   acceso: 'free' },
+    { id: 'dragon/dragon_default_01',  nombre: 'Dragón',     categoria: 'dragon', acceso: 'free' },
+    { id: 'dragon/dragon_default_02',  nombre: 'Dragón',     categoria: 'dragon', acceso: 'free' },
 
     // Desbloqueables: pendientes de asignar su logro
     { id: 'zorro/zorro_gafas',     nombre: 'Zorro cool',      categoria: 'zorro', acceso: 'logro' },
@@ -50,6 +67,27 @@ const CATALOGO_AVATARES = [
     { id: 'dragon/dragon_frio_02',     nombre: 'Dragón frío',     categoria: 'dragon', acceso: 'logro' },
     { id: 'dragon/dragon_gorra_01',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro' },
     { id: 'dragon/dragon_gorra_02',    nombre: 'Dragón con gorra', categoria: 'dragon', acceso: 'logro' },
+
+    // Llamas: pendientes de asignar su logro (salen como "Próximamente")
+    { id: 'llama/llama_aurora',    nombre: 'Llama aurora',    categoria: 'llama', acceso: 'logro' },
+    { id: 'llama/llama_supernova', nombre: 'Llama supernova', categoria: 'llama', acceso: 'logro' },
+
+    // Plan Pro. Van todos juntos en su propia sección —y no repartidos entre
+    // Gatos y un personaje nuevo— para que al usuario free le quede claro de
+    // un vistazo qué se lleva con el plan.
+    { id: 'pro/gatarosa_glam',        nombre: 'Gata glam',       categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatarosa_disenadora',  nombre: 'Gata diseñadora', categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatarosa_formal',      nombre: 'Gata elegante',   categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatarosa_gotica',      nombre: 'Gata gótica',     categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatonegro_rockero',    nombre: 'Gato rockero',    categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatonegro_rebelde',    nombre: 'Gato rebelde',    categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatonegro_explorador', nombre: 'Gato explorador', categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/gatonegro_diablo',     nombre: 'Gato diablo',     categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/lobogris_cachorro',    nombre: 'Lobo cachorro',   categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/lobogris_rapero',      nombre: 'Lobo rapero',     categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/lobogris_luchador',    nombre: 'Lobo luchador',   categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/lobogris_enfadado',    nombre: 'Lobo enfadado',   categoria: 'pro', acceso: 'pro' },
+    { id: 'pro/lobogris_swat',        nombre: 'Lobo SWAT',       categoria: 'pro', acceso: 'pro' },
 ];
 
 // Qué eligió mostrar el usuario. 'google' no se guarda: es lo que resulta de
@@ -61,10 +99,20 @@ const porId = new Map(CATALOGO_AVATARES.map((a) => [a.id, a]));
 const avatarDelCatalogo = (id) => porId.get(id) || null;
 const esAvatarValido    = (id) => typeof id === 'string' && porId.has(id);
 
-/** Ids que se otorgan al activar el plan pro (hoy ninguno). */
+/**
+ * Ids que se otorgan al activar el plan pro: al activarlo (controllers/auth.js)
+ * y retroactivamente a quien ya era pro (helpers/logros.js). Una vez dados no
+ * se quitan, aunque la suscripción caduque.
+ */
 const AVATARES_PRO = CATALOGO_AVATARES
     .filter((a) => a.acceso === 'pro')
     .map((a) => a.id);
+
+/** true si a un usuario pro aún le falta algún avatar de su plan. */
+const faltanAvataresPro = (desbloqueados = []) => {
+    const tiene = new Set(desbloqueados);
+    return AVATARES_PRO.some((id) => !tiene.has(id));
+};
 
 /**
  * Si el usuario puede equipar ese avatar: los gratuitos siempre, el resto solo
@@ -135,9 +183,11 @@ const otorgarAvatars = async (userId, ids) => {
 
 module.exports = {
     CATEGORIAS_AVATAR,
+    CONDICION_POR_DEFECTO,
     CATALOGO_AVATARES,
     AVATAR_TIPOS,
     AVATARES_PRO,
+    faltanAvataresPro,
     avatarDelCatalogo,
     esAvatarValido,
     puedeUsar,

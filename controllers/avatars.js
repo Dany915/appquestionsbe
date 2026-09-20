@@ -4,6 +4,7 @@ const mongoose     = require('mongoose');
 const User = require('../models/user');
 const {
     CATEGORIAS_AVATAR,
+    CONDICION_POR_DEFECTO,
     CATALOGO_AVATARES,
     AVATAR_TIPOS,
     avatarDelCatalogo,
@@ -44,9 +45,13 @@ const misAvatars = async (req, res = response) => {
             catalogo: CATALOGO_AVATARES.map((a) => ({
                 ...a,
                 // La condición sale de la tabla de logros; los que aún no
-                // tienen ninguno asignado se quedan en "Próximamente".
+                // tienen ninguno asignado caen al texto por defecto de su
+                // acceso ("Próximamente" o "Incluido en el plan Pro").
                 ...(a.acceso !== 'free' && {
-                    condicion: condicionDeAvatar(a.id) || a.condicion || 'Próximamente',
+                    condicion: condicionDeAvatar(a.id)
+                        || a.condicion
+                        || CONDICION_POR_DEFECTO[a.acceso]
+                        || 'Próximamente',
                 }),
                 disponible: puedeUsar(user, a.id),
             })),

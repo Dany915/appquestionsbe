@@ -3,12 +3,16 @@ const test   = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-    AVATARES_LOGRO, avataresPorEstadisticas, condicionDeAvatar, faltanAvatares,
+    AVATARES_LOGRO, MAX_LARGO_CONDICION, avataresPorEstadisticas,
+    condicionDeAvatar, faltanAvatares,
 } = require('../helpers/avatarRewards');
 const {
     MARCOS_TIEMPO, marcosPorHoras, faltanMarcosTiempo, CATALOGO_MARCOS,
 } = require('../helpers/frameRewards');
-const { CATALOGO_AVATARES, esAvatarValido } = require('../helpers/avatars');
+const {
+    CATALOGO_AVATARES, CATEGORIAS_AVATAR, CONDICION_POR_DEFECTO,
+    AVATARES_PRO, faltanAvataresPro, puedeUsar, esAvatarValido,
+} = require('../helpers/avatars');
 const { FRAME_IDS } = require('../helpers/frames');
 
 // Usuario sin nada hecho
@@ -27,10 +31,80 @@ test('los 12 avatares de logro existen en el catálogo y no son gratuitos', () =
     }
 });
 
-test('ya no queda ningún avatar de logro sin condición asignada', () => {
+test('las condiciones caben en la celda del selector', () => {
+    // Textos largos desbordaban la celda de la rejilla (pasó con los dragones)
+    for (const a of AVATARES_LOGRO) {
+        assert.ok(
+            a.condicion.length <= MAX_LARGO_CONDICION,
+            `"${a.condicion}" mide ${a.condicion.length}, máximo ${MAX_LARGO_CONDICION}`,
+        );
+    }
+});
+
+test('las llamas son lo único que sigue sin logro asignado', () => {
+    // Mientras estén aquí, el selector las pinta como "Próximamente" y solo
+    // se pueden conceder a mano. Al darles logro, este test avisa.
     const sinCondicion = CATALOGO_AVATARES
-        .filter((a) => a.acceso === 'logro' && !condicionDeAvatar(a.id));
-    assert.deepEqual(sinCondicion, []);
+        .filter((a) => a.acceso === 'logro' && !condicionDeAvatar(a.id))
+        .map((a) => a.id);
+    assert.deepEqual(sinCondicion, ['llama/llama_aurora', 'llama/llama_supernova']);
+});
+
+test('el catálogo está bien formado: id único, en su carpeta y con etiqueta', () => {
+    const vistos = new Set();
+    for (const a of CATALOGO_AVATARES) {
+        assert.ok(!vistos.has(a.id), `${a.id} está repetido`);
+        vistos.add(a.id);
+        // El id es la ruta del asset sin extensión: "carpeta/archivo"
+        assert.match(a.id, /^[a-z]+\/[a-z0-9_]+$/, `${a.id} no es "carpeta/archivo"`);
+        assert.equal(a.id.split('/')[0], a.categoria, `${a.id} no vive en su categoría`);
+        assert.ok(CATEGORIAS_AVATAR[a.categoria], `la categoría "${a.categoria}" no tiene etiqueta`);
+        assert.ok(a.nombre.length > 0, `${a.id} sin nombre visible`);
+        assert.ok(['free', 'pro', 'logro'].includes(a.acceso), `${a.id} con acceso "${a.acceso}"`);
+    }
+});
+
+test('los gratuitos son el "default" de cada personaje', () => {
+    const free = CATALOGO_AVATARES.filter((a) => a.acceso === 'free').map((a) => a.id);
+    assert.deepEqual(free, [
+        'zorro/zorro_default',
+        'gato/gatorosa_default',
+        'gato/gatarosa_default',
+        'gato/gatonegro_default',
+        'dragon/dragon_default_01',
+        'dragon/dragon_default_02',
+    ]);
+    assert.ok(free.every((id) => id.includes('_default')), 'algún gratuito no es un "default"');
+});
+
+test('los textos por defecto también caben en la celda', () => {
+    for (const [acceso, texto] of Object.entries(CONDICION_POR_DEFECTO)) {
+        assert.ok(
+            texto.length <= MAX_LARGO_CONDICION,
+            `"${texto}" (${acceso}) mide ${texto.length}, máximo ${MAX_LARGO_CONDICION}`,
+        );
+    }
+});
+
+test('los 13 avatares del plan pro se reparten con el plan', () => {
+    const enCatalogo = CATALOGO_AVATARES.filter((a) => a.acceso === 'pro').map((a) => a.id);
+    assert.equal(enCatalogo.length, 13);
+    assert.deepEqual(AVATARES_PRO, enCatalogo);
+    // Un free no los tiene; en cuanto se otorgan, deja de faltarle nada
+    assert.equal(faltanAvataresPro([]), true);
+    assert.equal(faltanAvataresPro(AVATARES_PRO), false);
+    // Y no se le pueden dar sueltos por la vía de admin sin ser del plan
+    for (const id of AVATARES_PRO) {
+        assert.equal(puedeUsar({ avatarsDesbloqueados: [] }, id), false, `${id} es gratis`);
+        assert.equal(puedeUsar({ avatarsDesbloqueados: [id] }, id), true, `${id} no se puede equipar`);
+    }
+});
+
+test('ningún avatar del plan pro tiene condición de logro', () => {
+    // Su texto sale de CONDICION_POR_DEFECTO.pro, no de la tabla de logros
+    for (const a of CATALOGO_AVATARES.filter((c) => c.acceso === 'pro')) {
+        assert.equal(condicionDeAvatar(a.id), null, `${a.id} está en la tabla de logros`);
+    }
 });
 
 test('sin actividad no se desbloquea ningún avatar', () => {

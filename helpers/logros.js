@@ -3,6 +3,7 @@ const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
 const { progresoNivel } = require('./leveling');
 const { faltanAvatares, evaluarAvatares } = require('./avatarRewards');
+const { AVATARES_PRO, faltanAvataresPro, otorgarAvatars } = require('./avatars');
 const { faltanMarcosTiempo, evaluarMarcosTiempo } = require('./frameRewards');
 
 /**
@@ -73,21 +74,28 @@ const estadisticasDe = async (userId, xp = 0) => {
 const evaluarLogrosAcumulados = async (userId) => {
     const vacio = { avatars: [], marcos: [] };
 
-    const user = await User.findById(userId, 'xp avatarsDesbloqueados marcosDesbloqueados');
+    const user = await User.findById(userId, 'xp plan avatarsDesbloqueados marcosDesbloqueados');
     if (!user) return vacio;
 
     const faltanAv = faltanAvatares(user.avatarsDesbloqueados);
     const faltanMa = faltanMarcosTiempo(user.marcosDesbloqueados);
-    if (!faltanAv && !faltanMa) return vacio;
+    // Los avatares del plan pro no dependen de las estadísticas, pero se
+    // reparten aquí para alcanzar a quien ya era pro antes de que existieran
+    // (al activar el plan solo los recibe quien lo activa a partir de ahora).
+    const faltanPro = user.plan === 'pro' && faltanAvataresPro(user.avatarsDesbloqueados);
+    if (!faltanAv && !faltanMa && !faltanPro) return vacio;
 
-    const stats = await estadisticasDe(userId, user.xp);
+    const stats = (faltanAv || faltanMa)
+        ? await estadisticasDe(userId, user.xp)
+        : null;
 
-    const [avatars, marcos] = await Promise.all([
+    const [avatars, marcos, pro] = await Promise.all([
         faltanAv ? evaluarAvatares(userId, stats) : [],
         faltanMa ? evaluarMarcosTiempo(userId, stats.horas) : [],
+        faltanPro ? otorgarAvatars(userId, AVATARES_PRO) : [],
     ]);
 
-    return { avatars, marcos };
+    return { avatars: [...avatars, ...pro], marcos };
 };
 
 module.exports = {

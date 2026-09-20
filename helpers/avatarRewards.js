@@ -29,13 +29,20 @@ const AVATARES_LOGRO = [
     { id: 'gato/gatorosa_enojado', condicion: 'Acierta 1.500 preguntas', cumple: (s) => s.correctas >= 1500 },
 
     // Dragón · precisión, dedicación y nivel
-    { id: 'dragon/dragon_confiado_01', condicion: 'Haz 3 quizzes perfectos de 10+ preguntas',  cumple: (s) => s.perfectos >= 3 },
-    { id: 'dragon/dragon_confiado_02', condicion: 'Haz 15 quizzes perfectos de 10+ preguntas', cumple: (s) => s.perfectos >= 15 },
-    { id: 'dragon/dragon_frio_01',     condicion: 'Practica 1 hora en total',                  cumple: (s) => s.horas >= 1 },
-    { id: 'dragon/dragon_frio_02',     condicion: 'Practica 5 horas en total',                 cumple: (s) => s.horas >= 5 },
-    { id: 'dragon/dragon_gorra_01',    condicion: 'Llega al nivel 5',                          cumple: (s) => s.nivel >= 5 },
-    { id: 'dragon/dragon_gorra_02',    condicion: 'Llega al nivel 15',                         cumple: (s) => s.nivel >= 15 },
+    { id: 'dragon/dragon_confiado_01', condicion: '3 quizzes perfectos',  cumple: (s) => s.perfectos >= 3 },
+    { id: 'dragon/dragon_confiado_02', condicion: '15 quizzes perfectos', cumple: (s) => s.perfectos >= 15 },
+    { id: 'dragon/dragon_frio_01',     condicion: '1 hora de práctica',   cumple: (s) => s.horas >= 1 },
+    { id: 'dragon/dragon_frio_02',     condicion: '5 horas de práctica',  cumple: (s) => s.horas >= 5 },
+    { id: 'dragon/dragon_gorra_01',    condicion: 'Llega al nivel 5',     cumple: (s) => s.nivel >= 5 },
+    { id: 'dragon/dragon_gorra_02',    condicion: 'Llega al nivel 15',    cumple: (s) => s.nivel >= 15 },
 ];
+
+/**
+ * Máximo de caracteres de una condición. El selector de avatares las pinta
+ * bajo una ilustración, en una celda estrecha de rejilla: con textos largos
+ * se desbordaba la celda. Lo vigila test/logros.test.js.
+ */
+const MAX_LARGO_CONDICION = 25;
 
 const porId = new Map(AVATARES_LOGRO.map((a) => [a.id, a]));
 
@@ -64,6 +71,7 @@ const evaluarAvatares = async (userId, stats) => {
 
 module.exports = {
     AVATARES_LOGRO,
+    MAX_LARGO_CONDICION,
     condicionDeAvatar,
     avataresPorEstadisticas,
     faltanAvatares,
