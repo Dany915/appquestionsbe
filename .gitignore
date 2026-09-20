@@ -5,3 +5,6 @@ node_modules/
 # Material de trabajo: ilustraciones generadas, copias de código Flutter y
 # scripts sueltos. No es código del backend.
 output/
+
+# Material de contenido (lecturas y preguntas): no va en la carga.
+contenido/
