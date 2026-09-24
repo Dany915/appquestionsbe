@@ -3,8 +3,10 @@ const Attempt  = require('../models/attempt');
 const User     = require('../models/user');
 const { progresoNivel } = require('./leveling');
 const { faltanAvatares, evaluarAvatares } = require('./avatarRewards');
-const { AVATARES_PRO, faltanAvataresPro, otorgarAvatars } = require('./avatars');
-const { faltanMarcosTiempo, evaluarMarcosTiempo } = require('./frameRewards');
+const { faltanAvataresPro, sincronizarAvatarsPro } = require('./avatars');
+const {
+    faltanMarcosTiempo, evaluarMarcosTiempo, faltanMarcosPro, sincronizarMarcosPro,
+} = require('./frameRewards');
 
 /**
  * Logros que dependen del historial COMPLETO del usuario (no del quiz recién
@@ -82,20 +84,26 @@ const evaluarLogrosAcumulados = async (userId) => {
     // Los avatares del plan pro no dependen de las estadísticas, pero se
     // reparten aquí para alcanzar a quien ya era pro antes de que existieran
     // (al activar el plan solo los recibe quien lo activa a partir de ahora).
-    const faltanPro = user.plan === 'pro' && faltanAvataresPro(user.avatarsDesbloqueados);
+    const faltanPro = user.plan === 'pro' && (
+        faltanAvataresPro(user.avatarsDesbloqueados) ||
+        faltanMarcosPro(user.marcosDesbloqueados)
+    );
     if (!faltanAv && !faltanMa && !faltanPro) return vacio;
 
     const stats = (faltanAv || faltanMa)
         ? await estadisticasDe(userId, user.xp)
         : null;
 
-    const [avatars, marcos, pro] = await Promise.all([
+    const [avatars, marcos] = await Promise.all([
         faltanAv ? evaluarAvatares(userId, stats) : [],
         faltanMa ? evaluarMarcosTiempo(userId, stats.horas) : [],
-        faltanPro ? otorgarAvatars(userId, AVATARES_PRO) : [],
+        // Los del plan no se devuelven: la app celebra uno a uno lo que le
+        // llega aquí, y el lote pro se celebra aparte, en bloque.
+        faltanPro ? sincronizarAvatarsPro(user) : [],
+        faltanPro ? sincronizarMarcosPro(user) : [],
     ]);
 
-    return { avatars: [...avatars, ...pro], marcos };
+    return { avatars, marcos };
 };
 
 module.exports = {

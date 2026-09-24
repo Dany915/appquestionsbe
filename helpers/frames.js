@@ -24,7 +24,7 @@ const esMarcoValido = (id) => typeof id === 'string' && FRAME_IDS.includes(id);
  * Devuelve solo los marcos que el usuario NO tenía (los recién desbloqueados),
  * para que la app pueda celebrarlos.
  */
-const otorgarMarcos = async (userId, ids) => {
+const otorgarMarcos = async (userId, ids, { avisar = true } = {}) => {
     const validos = (Array.isArray(ids) ? ids : [ids]).filter(esMarcoValido);
     if (validos.length === 0) return [];
 
@@ -40,8 +40,9 @@ const otorgarMarcos = async (userId, ids) => {
         $addToSet: {
             marcosDesbloqueados: { $each: nuevos },
             // Cola de avisos: se muestran cuando la app pueda, sin importar
-            // dónde se otorgaron (quiz, cierre semanal, compra…).
-            marcosPendientesAviso: { $each: nuevos },
+            // dónde se otorgaron (quiz, cierre semanal…). El lote del plan
+            // pro va con avisar: false — se celebra en bloque, no uno a uno.
+            ...(avisar && { marcosPendientesAviso: { $each: nuevos } }),
         },
     });
 

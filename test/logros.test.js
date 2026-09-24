@@ -8,6 +8,7 @@ const {
 } = require('../helpers/avatarRewards');
 const {
     MARCOS_TIEMPO, marcosPorHoras, faltanMarcosTiempo, CATALOGO_MARCOS,
+    MARCOS_PRO, faltanMarcosPro,
 } = require('../helpers/frameRewards');
 const {
     CATALOGO_AVATARES, CATEGORIAS_AVATAR, CONDICION_POR_DEFECTO,
@@ -159,9 +160,23 @@ test('los 6 volcánicos están en el catálogo visible, en la categoría Dedicac
     assert.deepEqual(dedicacion.map((m) => m.id), MARCOS_TIEMPO.map((m) => m.marco));
 });
 
-test('nebulosa y arcoíris siguen sin condición asignada', () => {
+test('solo el arcoíris sigue sin condición asignada', () => {
+    // Son los más raros; su forma de desbloqueo se decide más adelante
     const asignados = new Set(CATALOGO_MARCOS.map((m) => m.id));
     const pendientes = FRAME_IDS.filter((id) => !asignados.has(id));
-    assert.equal(pendientes.length, 10);
-    assert.ok(pendientes.every((id) => id.startsWith('rainbow.') || id.startsWith('nebula.')));
+    assert.equal(pendientes.length, 6);
+    assert.ok(pendientes.every((id) => id.startsWith('rainbow.')), pendientes.join(', '));
+});
+
+test('el plan pro entrega la nebulosa de shimmer a rays', () => {
+    assert.deepEqual(MARCOS_PRO, ['nebula.shimmer', 'nebula.pulse', 'nebula.sparkle', 'nebula.rays']);
+    for (const id of MARCOS_PRO) assert.ok(FRAME_IDS.includes(id), `${id} no existe`);
+    // Visibles en "Mis marcos", en su propia categoría
+    const enCatalogo = CATALOGO_MARCOS.filter((m) => m.categoria === 'Plan Pro').map((m) => m.id);
+    assert.deepEqual(enCatalogo, MARCOS_PRO);
+    // No pisan los de "Primeros pasos"
+    const primeros = CATALOGO_MARCOS.filter((m) => m.categoria === 'Primeros pasos').map((m) => m.id);
+    assert.ok(MARCOS_PRO.every((id) => !primeros.includes(id)));
+    assert.equal(faltanMarcosPro([]), true);
+    assert.equal(faltanMarcosPro(MARCOS_PRO), false);
 });

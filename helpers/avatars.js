@@ -158,8 +158,13 @@ const avatarVisible = (user) => {
  * Otorga avatares a un usuario. Idempotente ($addToSet): repetir la llamada no
  * duplica nada. Devuelve solo los que NO tenía, para que la app los celebre.
  * Los gratuitos se ignoran: no hay nada que otorgar.
+ *
+ * `avisar: false` los entrega sin encolarlos en avatarsPendientesAviso. Es lo
+ * que se hace con el lote del plan pro: la app celebra los pendientes de uno
+ * en uno, y soltar 13 diálogos seguidos al activar el plan sería insufrible.
+ * Esa celebración le toca a la pantalla de bienvenida Pro, en bloque.
  */
-const otorgarAvatars = async (userId, ids) => {
+const otorgarAvatars = async (userId, ids, { avisar = true } = {}) => {
     const validos = (Array.isArray(ids) ? ids : [ids])
         .filter((id) => esAvatarValido(id) && avatarDelCatalogo(id).acceso !== 'free');
     if (validos.length === 0) return [];
@@ -173,12 +178,28 @@ const otorgarAvatars = async (userId, ids) => {
 
     await User.findByIdAndUpdate(userId, {
         $addToSet: {
-            avatarsDesbloqueados:   { $each: nuevos },
-            avatarsPendientesAviso: { $each: nuevos },
+            avatarsDesbloqueados: { $each: nuevos },
+            ...(avisar && { avatarsPendientesAviso: { $each: nuevos } }),
         },
     });
 
     return nuevos;
+};
+
+/**
+ * Entrega los avatares del plan a un usuario pro al que le falten. Devuelve
+ * los recién otorgados, o [] si no era pro o ya los tenía.
+ *
+ * Se llama desde las tres puertas por las que puede pasar un usuario pro:
+ * al activar el plan (controllers/auth.js), al abrir el selector
+ * (controllers/avatars.js) y al terminar un quiz (helpers/logros.js). Es
+ * idempotente y sin coste cuando no falta nada, así que sobra con que pase
+ * por cualquiera de ellas.
+ */
+const sincronizarAvatarsPro = async (user) => {
+    if (user?.plan !== 'pro') return [];
+    if (!faltanAvataresPro(user.avatarsDesbloqueados)) return [];
+    return otorgarAvatars(user._id, AVATARES_PRO, { avisar: false });
 };
 
 module.exports = {
@@ -193,4 +214,5 @@ module.exports = {
     puedeUsar,
     avatarVisible,
     otorgarAvatars,
+    sincronizarAvatarsPro,
 };

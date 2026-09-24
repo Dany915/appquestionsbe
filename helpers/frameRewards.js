@@ -14,10 +14,39 @@ const { otorgarMarcos } = require('./frames');
 //   blue_star/nebula breathe  → primer quiz superado          [IMPLEMENTADO]
 //   blue_star shimmer→rays    → volumen y maestría en quizzes [IMPLEMENTADO]
 //   volcanic.*                → horas de práctica acumuladas  [IMPLEMENTADO]
-//   resto                     → pendiente de asignar
+//   nebula shimmer→rays       → plan pro                      [IMPLEMENTADO]
+//   rainbow.*                 → pendiente de asignar (los más raros)
 //
 // Añadir una categoría nueva = añadir su tabla aquí y llamar al evaluador
 // correspondiente. Nada más del backend necesita cambiar.
+
+/**
+ * Marcos del plan pro. Los dos primeros estilos de nebulosa son de "Primeros
+ * pasos"; el plan entrega el resto de la familia, de shimmer a rays.
+ *
+ * Como todo lo desbloqueado, se quedan para siempre aunque el plan caduque.
+ * Se entregan desde tres puertas: al activar el plan (controllers/auth.js), al
+ * abrir "Mis marcos" (controllers/frames.js) y al terminar un quiz
+ * (helpers/logros.js), así llegan también a quien ya era pro de antes.
+ */
+const MARCOS_PRO = ['nebula.shimmer', 'nebula.pulse', 'nebula.sparkle', 'nebula.rays'];
+
+/** true si a un usuario aún le falta algún marco del plan pro. */
+const faltanMarcosPro = (desbloqueados = []) => {
+    const tiene = new Set(desbloqueados);
+    return MARCOS_PRO.some((id) => !tiene.has(id));
+};
+
+/**
+ * Entrega los marcos del plan a un usuario pro al que le falten. Devuelve los
+ * recién otorgados, o [] si no era pro o ya los tenía. Sin encolar avisos: la
+ * celebración del lote le toca a la bienvenida Pro.
+ */
+const sincronizarMarcosPro = async (user) => {
+    if (user?.plan !== 'pro') return [];
+    if (!faltanMarcosPro(user.marcosDesbloqueados)) return [];
+    return otorgarMarcos(user._id, MARCOS_PRO, { avisar: false });
+};
 
 /** Horas de práctica acumuladas → marco. Orden ascendente obligatorio. */
 const MARCOS_TIEMPO = [
@@ -264,6 +293,12 @@ const CATALOGO_MARCOS = [
     { id: 'gold.pulse',   categoria: 'Ranking semanal', condicion: 'Sé nº 1 en 3 semanas' },
     { id: 'gold.sparkle', categoria: 'Ranking semanal', condicion: 'Sé nº 1 en 10 semanas' },
     { id: 'gold.rays',    categoria: 'Ranking semanal', condicion: 'Top 3 durante 5 semanas seguidas' },
+
+    // Plan Pro: continúan la nebulosa de "Primeros pasos"
+    { id: 'nebula.shimmer', categoria: 'Plan Pro', condicion: 'Incluido en el plan Pro' },
+    { id: 'nebula.pulse',   categoria: 'Plan Pro', condicion: 'Incluido en el plan Pro' },
+    { id: 'nebula.sparkle', categoria: 'Plan Pro', condicion: 'Incluido en el plan Pro' },
+    { id: 'nebula.rays',    categoria: 'Plan Pro', condicion: 'Incluido en el plan Pro' },
 ];
 
 /** Condición de un marco, o null si no está asignado. */
@@ -273,6 +308,9 @@ const condicionDeMarco = (id) =>
 module.exports = {
     CATALOGO_MARCOS,
     condicionDeMarco,
+    MARCOS_PRO,
+    faltanMarcosPro,
+    sincronizarMarcosPro,
     MARCOS_RACHA,
     MARCOS_TIEMPO,
     MARCOS_RANKING,

@@ -3,7 +3,7 @@ const mongoose     = require('mongoose');
 
 const User = require('../models/user');
 const { esMarcoValido, otorgarMarcos } = require('../helpers/frames');
-const { CATALOGO_MARCOS } = require('../helpers/frameRewards');
+const { CATALOGO_MARCOS, sincronizarMarcosPro } = require('../helpers/frameRewards');
 
 /**
  * GET /api/frames
@@ -16,13 +16,17 @@ const misMarcos = async (req, res = response) => {
     try {
         const user = await User.findById(
             req.uid,
-            'marcosDesbloqueados marcoEquipado marcosPendientesAviso'
+            'plan marcosDesbloqueados marcoEquipado marcosPendientesAviso'
         );
         if (!user) {
             return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
         }
 
-        const desbloqueados = user.marcosDesbloqueados || [];
+        // Red de seguridad: quien ya era pro antes de que existieran estos
+        // marcos los recibe aquí, que es justo donde viene a buscarlos.
+        const nuevosPro = await sincronizarMarcosPro(user);
+
+        const desbloqueados = [...(user.marcosDesbloqueados || []), ...nuevosPro];
 
         return res.status(200).json({
             ok: true,

@@ -12,6 +12,7 @@ const {
     puedeUsar,
     avatarVisible,
     otorgarAvatars,
+    sincronizarAvatarsPro,
 } = require('../helpers/avatars');
 const { condicionDeAvatar } = require('../helpers/avatarRewards');
 
@@ -27,10 +28,18 @@ const misAvatars = async (req, res = response) => {
     try {
         const user = await User.findById(
             req.uid,
-            'avatar avatarTipo avatarId avatarsDesbloqueados avatarsPendientesAviso'
+            'plan avatar avatarTipo avatarId avatarsDesbloqueados avatarsPendientesAviso'
         );
         if (!user) {
             return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
+        }
+
+        // Red de seguridad: quien ya era pro antes de que existieran estos
+        // avatares —o se hizo pro por una vía que no pasa por cambiarPlan—
+        // los recibe aquí, que es justo donde viene a buscarlos.
+        const nuevosPro = await sincronizarAvatarsPro(user);
+        if (nuevosPro.length > 0) {
+            user.avatarsDesbloqueados = [...(user.avatarsDesbloqueados || []), ...nuevosPro];
         }
 
         return res.status(200).json({

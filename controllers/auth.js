@@ -11,7 +11,8 @@ const {
     DIAS_ENTRE_CAMBIOS,
 } = require('../helpers/displayName');
 const { parsearOffset } = require('../helpers/diaLocal');
-const { avatarVisible, AVATARES_PRO, otorgarAvatars } = require('../helpers/avatars');
+const { avatarVisible, sincronizarAvatarsPro } = require('../helpers/avatars');
+const { sincronizarMarcosPro } = require('../helpers/frameRewards');
 
 // ─── Configuración ────────���────────────────────────────────────────────────────
 
@@ -322,11 +323,13 @@ const cambiarPlan = async (req, res = response) => {
             return res.status(404).json({ ok: false, msg: 'Usuario no encontrado.' });
         }
 
-        // Los avatares del plan se entregan al activarlo y se quedan para
-        // siempre: si el pro caduca, el usuario los conserva. Es idempotente,
-        // así que repetir la llamada no molesta. A quien ya era pro antes de
-        // que existieran se los da helpers/logros.js en su siguiente quiz.
-        if (plan === 'pro') await otorgarAvatars(userId, AVATARES_PRO);
+        // Los avatares y marcos del plan se entregan al activarlo y se
+        // quedan para siempre: si el pro caduca, el usuario los conserva. Sin
+        // encolar avisos: la celebración del lote es cosa de la bienvenida Pro.
+        await Promise.all([
+            sincronizarAvatarsPro(user),
+            sincronizarMarcosPro(user),
+        ]);
 
         return res.status(200).json({
             ok:   true,
